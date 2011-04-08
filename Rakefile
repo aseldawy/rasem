@@ -16,7 +16,10 @@ Jeweler::Tasks.new do |gem|
   gem.homepage = "http://github.com/aseldawy/rasem"
   gem.license = "MIT"
   gem.summary = %Q{A gem to generate images from ruby files}
-  gem.description = %Q{TODO: longer description of your gem}
+  gem.description = <<-DESCRIPTION
+  This gem allows you to describe your images using ruby code.
+  You can use rasem to draw complex images using small portions of ruby code
+  DESCRIPTION
   gem.email = "eldawy@cs.umn.edu"
   gem.authors = ["Ahmed Eldawy"]
   # Include your dependencies below. Runtime dependencies are required when using your gem,

@@ -1,6 +1,6 @@
 = rasem
 
-Description goes here.
+rasem is a ruby gem that allows you to describe your images in ruby code.
 
 == Contributing to rasem
  
