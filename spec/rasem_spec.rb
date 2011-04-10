@@ -102,4 +102,22 @@ describe Rasem::SVGImage do
     str.should =~ %r{ry="300"}
   end
 
+  it "should draw a polygon given an array of points" do
+    img = Rasem::SVGImage.new("", 100, 100) do
+      polygon([[0,0], [1,2], [3,4]])
+    end
+    str = img.output
+    str.should =~ %r{<polygon}
+    str.should =~ %r{points="0,0 1,2 3,4"}
+  end
+
+  it "should draw a polyline given an array of points" do
+    img = Rasem::SVGImage.new("", 100, 100) do
+      polyline([[0,0], [1,2], [3,4]])
+    end
+    str = img.output
+    str.should =~ %r{<polyline}
+    str.should =~ %r{points="0,0 1,2 3,4"}
+  end
+
 end

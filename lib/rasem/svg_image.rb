@@ -35,7 +35,15 @@ class Rasem::SVGImage
   def ellipse(cx, cy, rx, ry)
     @output << %Q{<ellipse cx="#{cx}" cy="#{cy}" rx="#{rx}" ry="#{ry}"/>}
   end
- 
+  
+  def polygon(*args)
+    polything("polygon", *args)
+  end
+   
+  def polyline(*args)
+    polything("polyline", *args)
+  end
+  
   # Closes the file. No more drawing is possible after this
   def close
     write_close
@@ -76,5 +84,20 @@ private
   # Write the closing tag of the file
   def write_close
     @output << "</svg>"
+  end
+  
+  # Draws either a polygon or polyline according to the first parameter
+  def polything(name, *args)
+    return if args.empty?
+    coords = args.flatten
+    raise "Illegal number of coordinates (should be even)" if coords.length.odd?
+    @output << %Q{<#{name} points="}
+    until coords.empty? do
+      x = coords.shift
+      y = coords.shift
+      @output << "#{x},#{y}"
+      @output << " " unless coords.empty?
+    end
+    @output << %{"/>}
   end
 end
