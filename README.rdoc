@@ -1,6 +1,6 @@
 = Rasem
 
-rasem is a ruby gem that allows you to describe your images in ruby code.
+rasem is a pure ruby gem that allows you to describe your SVG images in ruby code.
 
 == Why Rasem
 
@@ -8,6 +8,8 @@ rasem is a ruby gem that allows you to describe your images in ruby code.
 * Do you want to draw a complex image that is easier to describe using a code?
 * Would you like to power your HTML 5 site with nicely drawn SVG images?
 * Do you need to generate nice images from your ruby code?
+* Did you feed up with using DIVs and Javascript to draw simple graphs?
+* Is your server overwhelmed with sending PNG images that can be described in a few bytes using SVG?
 
 Rasem allows you to generate SVG images that can be easily exported to other
 formats and embed in an HTML 5 page.
@@ -17,6 +19,11 @@ formats and embed in an HTML 5 page.
 * Draw basic elements: line, rectangle, rouned rectangle, circle, ellipse, polygon and polyline.
 * Use SVG styles such as stroke-width, opacity and fill.
 * Create SVG groups for better editing in SVG editors.
+Coming features:
+* Include more SVG elements such as gradients, filters and paths
+* Create default rake and thor tasks to convert your .rasem files to .svg.
+* Embed other images in your SVG image
+* Output to more formats such as PNG.
 
 == Installation
   gem install rasem
@@ -72,10 +79,12 @@ simple_graph.rasem
 
 Here is a more sophisticated example.
 
-tictactoe.rasem
+  tictactoe.rasem
   set_width 150
   set_height 150
-  board = [['x','o','x'], ['o', '-', 'o'], ['x', 'o', 'x']]
+  board = [['x', 'o', 'x'],
+           ['o', '-', 'o'],
+           ['x', 'o', 'x']]
   def draw_x(x,y)
     group :stroke=>"red" do
       line x-20, y-20, x+20, y+20
@@ -87,7 +96,6 @@ tictactoe.rasem
     circle x, y, 20, :stroke=>"blue", :fill=>"white"
   end
 
-  # Draw the board
   group :stroke=>"black" do  
     rectangle 0, 0, 150, 150, :stroke_width=>2, :fill=>"white"
     line 50, 0, 50, 150
@@ -132,12 +140,12 @@ to SVGImage.new
     end
   end
 
-The previous example has another advantage of not buffering the whole image to
-memory before writing to file. Rasem is smart enough to detect that the output
-can be passed directly to the file, hence, saving unnecessary memory buffers.
+The previous example has another advantage.
+It does not need to buffer the whole image to memory before writing to file.
+Rasem is smart enough to detect that the output can be passed directly to the
+file, hence, saving unnecessary memory buffers.
 
 == Contributing to rasem
- 
 * Check out the latest master to make sure the feature hasn't been implemented or the bug hasn't been fixed yet
 * Check out the issue tracker to make sure someone already hasn't requested it and/or contributed it
 * Fork the project
