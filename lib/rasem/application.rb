@@ -19,7 +19,7 @@ class Rasem::Application
         svg_file = source_file + ".svg"
       end
       File.open(svg_file, "w") do |f|
-        Rasem::SVGImage.new(f, 100, 100) do
+        Rasem::SVGImage.new(f, "100%", "100%") do
           eval(File.read(source_file), binding)
         end
       end

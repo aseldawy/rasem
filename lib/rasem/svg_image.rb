@@ -16,6 +16,22 @@ class Rasem::SVGImage
       self.close
     end
   end
+  
+  def set_width(new_width)
+    if @output.respond_to?(:sub!)
+      @output.sub!(/<svg width="[^"]+"/, %Q{<svg width="#{new_width}"})
+    else
+      raise "Cannot change width after initialization for this output"
+    end
+  end
+  
+  def set_height(new_height)
+    if @output.respond_to?(:sub!)
+      @output.sub!(/<svg width="([^"]+)" height="[^"]+"/, %Q{<svg width="\\1" height="#{new_height}"})
+    else
+      raise "Cannot change width after initialization for this output"
+    end
+  end
 
   # Draw a straight line between the two end points
   def line(x1, y1, x2, y2, style={})

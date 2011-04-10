@@ -259,5 +259,15 @@ describe Rasem::SVGImage do
     str = img.output
     str.should =~ %r{<g .*circle.*circle.*</g>}
   end
+  
+  it "should update width and height after init" do
+    img = Rasem::SVGImage.new("", 100, 100) do
+      set_width 200
+      set_height 300
+    end
+    str = img.output
+    str.should =~ %r{width="200"}
+    str.should =~ %r{height="300"}
+  end
 
 end
