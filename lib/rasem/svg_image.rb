@@ -89,6 +89,17 @@ class Rasem::SVGImage
     # Pop style again to revert changes
     @default_styles.pop
   end
+
+  def group(style={}, &proc)
+    # Open the group
+    @output << "<g"
+    write_style(style)
+    @output << ">"
+    # Call the block
+    self.instance_exec(&proc)
+    # Close the group
+    @output << "</g>"
+  end
   
 private
   # Creates an object for ouput out of an argument

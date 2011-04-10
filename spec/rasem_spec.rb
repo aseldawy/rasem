@@ -248,5 +248,16 @@ describe Rasem::SVGImage do
     str.should_not =~ %r{style=}
     str.should_not =~ %r{stroke-width:}
   end
+  
+  it "should create a group" do
+    img = Rasem::SVGImage.new("", 100, 100) do
+      group :stroke_width=>3 do
+        circle(0, 0, 10)
+        circle(20, 20, 10)
+      end
+    end
+    str = img.output
+    str.should =~ %r{<g .*circle.*circle.*</g>}
+  end
 
 end
