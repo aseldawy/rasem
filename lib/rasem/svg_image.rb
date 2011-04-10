@@ -1,4 +1,5 @@
 class Rasem::SVGImage
+  DefaultStyle = {:stroke=>"black", :fill=>"black"}
 
   def initialize(*args, &block)
     if args.length == 3
@@ -8,7 +9,7 @@ class Rasem::SVGImage
     end
     
     # Initialize a stack of default styles
-    @default_styles = []
+    @default_styles = [DefaultStyle]
 
     write_header(*args)
     if block
