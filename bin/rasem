@@ -1,0 +1,28 @@
+#!/usr/bin/env ruby
+rasem_dir = File.expand_path(File.join(File.dirname(__FILE__), '..', 'lib'))
+$LOAD_PATH.unshift(rasem_dir) unless $LOAD_PATH.include?(rasem_dir)
+require 'rasem'
+
+if ARGV.empty?
+  source_files = Dir.glob(File.expand_path("*.rasem"))
+else
+  source_files = ARGV
+end
+
+if source_files.empty?
+  puts "No input files"
+end
+
+for source_file in source_files
+  puts "Source file #{source_file}"
+  if source_file =~ /\.rasem$/
+    svg_file = source_file.sub(/\.rasem$/, '.svg')
+  else
+    svg_file = source_file + ".svg"
+  end
+  File.open(svg_file, "w") do |f|
+    Rasem::SVGImage.new(f, 100, 100) do
+      eval(File.read(source_file), binding)
+    end
+  end
+end
