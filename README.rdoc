@@ -20,10 +20,14 @@ formats and embed in an HTML 5 page.
 * Use SVG styles such as stroke-width, opacity and fill.
 * Create SVG groups for better editing in SVG editors.
 Coming features:
-* Include more SVG elements such as gradients, filters and paths
+* Include all SVG standard elements such as gradients, filters and paths
 * Create default rake and thor tasks to convert your .rasem files to .svg.
 * Embed other images in your SVG image
 * Output to more formats such as PNG.
+
+Rasem is still in alpha release. Please report your bugs so that we can work on it.
+You are welcome to contribute to the project by adding more features and fixing bugs.
+The end goal of the project is to fully support SVG standard and make it easy to use.
 
 == Installation
   gem install rasem
