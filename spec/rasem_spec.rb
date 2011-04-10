@@ -189,4 +189,64 @@ describe Rasem::SVGImage do
     str.should =~ %r{points="0,0 1,2 3,4"}
   end
 
+  it "should fix style names" do
+    img = Rasem::SVGImage.new("", 100, 100) do
+      circle(0, 0, 10, :stroke_width=>3)
+    end
+    str = img.output
+    str.should =~ %r{style=}
+    str.should =~ %r{stroke-width:3}
+  end
+  
+  it "should group styles" do
+    img = Rasem::SVGImage.new("", 100, 100) do
+      with_style :stroke_width=>3 do
+        circle(0, 0, 10)
+      end
+    end
+    str = img.output
+    str.should =~ %r{style=}
+    str.should =~ %r{stroke-width:3}
+  end
+
+  it "should group styles nesting" do
+    img = Rasem::SVGImage.new("", 100, 100) do
+      with_style :stroke_width=>3 do
+        with_style :fill=>"black" do
+          circle(0, 0, 10)
+        end
+      end
+    end
+    str = img.output
+    str.should =~ %r{style=}
+    str.should =~ %r{stroke-width:3}
+    str.should =~ %r{fill:black}
+  end
+
+  it "should group styles override nesting" do
+    img = Rasem::SVGImage.new("", 100, 100) do
+      with_style :stroke_width=>3 do
+        with_style :stroke_width=>5 do
+          circle(0, 0, 10)
+        end
+      end
+    end
+    str = img.output
+    str.should =~ %r{style=}
+    str.should =~ %r{stroke-width:5}
+  end
+
+  it "should group styles limited effect" do
+    img = Rasem::SVGImage.new("", 100, 100) do
+      with_style :stroke_width=>3 do
+        with_style :stroke_width=>5 do
+        end
+      end
+      circle(0, 0, 10)
+    end
+    str = img.output
+    str.should_not =~ %r{style=}
+    str.should_not =~ %r{stroke-width:}
+  end
+
 end

@@ -6,6 +6,9 @@ class Rasem::SVGImage
     else
       @output = create_output(nil)
     end
+    
+    # Initialize a stack of default styles
+    @default_styles = []
 
     write_header(*args)
     if block
@@ -76,6 +79,17 @@ class Rasem::SVGImage
     @closed
   end
   
+  def with_style(style={}, &proc)
+    # Merge passed style with current default style
+    updated_style = default_style.update(style)
+    # Push updated style to the stack
+    @default_styles.push(updated_style)
+    # Call the block
+    self.instance_exec(&proc)
+    # Pop style again to revert changes
+    @default_styles.pop
+  end
+  
 private
   # Creates an object for ouput out of an argument
   def create_output(arg)
@@ -121,12 +135,25 @@ private
     @output << '"/>'
   end
   
+  # Return current deafult style
+  def default_style
+    @default_styles.last || {}
+  end
+  
   # Writes styles to current output
+  # Avaialable styles are:
+  # fill: Fill color
+  # stroke-width: stroke width
+  # stroke: stroke color
+  # fill-opacity: fill opacity. ranges from 0 to 1
+  # stroke-opacity: stroke opacity. ranges from 0 to 1
+  # opacity: Opacity for the whole element
   def write_style(style)
-    return if style.nil? || style.empty?
+    style_ = default_style.merge(style)
+    return if style_.empty?
     @output << ' style="'
-    style.each_pair do |style, value|
-      @output << "#{style}:#{value};"
+    style_.each_pair do |style, value|
+      @output << "#{style.to_s.gsub('_','-')}:#{value};"
     end
     @output << '"'
   end
