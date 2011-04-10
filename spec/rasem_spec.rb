@@ -8,6 +8,12 @@ describe Rasem::SVGImage do
     str.should =~ %r{height="100"}
   end
 
+  it "should initialize XML correctly" do
+    img = Rasem::SVGImage.new("", 100, 100)
+    str = img.output
+    str.should =~ /^<\?xml/
+  end
+
   it "should close an image" do
     img = Rasem::SVGImage.new("", 100, 100)
     img.close
