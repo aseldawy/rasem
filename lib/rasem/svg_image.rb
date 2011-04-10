@@ -15,25 +15,43 @@ class Rasem::SVGImage
   end
 
   # Draw a straight line between the two end points
-  def line(x1, y1, x2, y2)
-    @output << %Q{<line x1="#{x1}" y1="#{y1}" x2="#{x2}" y2="#{y2}"/>}
+  def line(x1, y1, x2, y2, style={})
+    @output << %Q{<line x1="#{x1}" y1="#{y1}" x2="#{x2}" y2="#{y2}"}
+    write_style(style)
+    @output << %Q{/>}
   end
   
   # Draw a circle given a center and a radius
-  def circle(cx, cy, r)
-    @output << %Q{<circle cx="#{cx}" cy="#{cy}" r="#{r}"/>}
+  def circle(cx, cy, r, style={})
+    @output << %Q{<circle cx="#{cx}" cy="#{cy}" r="#{r}"}
+    write_style(style)
+    @output << %Q{/>}
   end
  
   # Draw a rectangle or rounded rectangle 
-  def rectangle(x, y, width, height, rx=nil, ry=rx)
+  def rectangle(x, y, width, height, *args)
+    style = (!args.empty? && args.last.is_a?(Hash)) ? args.pop : {}
+    if args.length == 0
+      rx = ry = 0
+    elsif args.length == 1
+      rx = ry = args.pop
+    elsif args.length == 2
+      rx, ry = args
+    else
+      raise "Illegal number of arguments to rectangle"
+    end
+      
     @output << %Q{<rect x="#{x}" y="#{y}" width="#{width}" height="#{height}"}
     @output << %Q{ rx="#{rx}" ry="#{ry}"} if rx && ry
+    write_style(style)
     @output << %Q{/>}
   end
  
   # Draw an circle given a center and two radii
-  def ellipse(cx, cy, rx, ry)
-    @output << %Q{<ellipse cx="#{cx}" cy="#{cy}" rx="#{rx}" ry="#{ry}"/>}
+  def ellipse(cx, cy, rx, ry, style={})
+    @output << %Q{<ellipse cx="#{cx}" cy="#{cy}" rx="#{rx}" ry="#{ry}"}
+    write_style(style)
+    @output << %Q{/>}
   end
   
   def polygon(*args)
@@ -89,6 +107,7 @@ private
   # Draws either a polygon or polyline according to the first parameter
   def polything(name, *args)
     return if args.empty?
+    style = (args.last.is_a?(Hash)) ? args.pop : {}
     coords = args.flatten
     raise "Illegal number of coordinates (should be even)" if coords.length.odd?
     @output << %Q{<#{name} points="}
@@ -98,6 +117,17 @@ private
       @output << "#{x},#{y}"
       @output << " " unless coords.empty?
     end
-    @output << %{"/>}
+    write_style(style)
+    @output << '"/>'
+  end
+  
+  # Writes styles to current output
+  def write_style(style)
+    return if style.nil? || style.empty?
+    @output << ' style="'
+    style.each_pair do |style, value|
+      @output << "#{style}:#{value};"
+    end
+    @output << '"'
   end
 end

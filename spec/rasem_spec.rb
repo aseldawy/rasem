@@ -51,6 +51,15 @@ describe Rasem::SVGImage do
     str.should =~ %r{y2="100"}
   end
 
+  it "should draw a line with style" do
+    img = Rasem::SVGImage.new("", 100, 100) do
+      line(0, 0, 10, 10, :fill=>"white")
+    end
+    str = img.output
+    str.should =~ %r{style=}
+    str.should =~ %r{fill:white}
+  end
+
   it "should draw a circle" do
     img = Rasem::SVGImage.new("", 100, 100) do
       circle(0, 0, 10)
@@ -61,7 +70,16 @@ describe Rasem::SVGImage do
     str.should =~ %r{cy="0"}
     str.should =~ %r{r="10"}
   end
-  
+
+  it "should draw a circle with style" do
+    img = Rasem::SVGImage.new("", 100, 100) do
+      circle(0, 0, 10, :fill=>"white")
+    end
+    str = img.output
+    str.should =~ %r{style=}
+    str.should =~ %r{fill:white}
+  end
+
   it "should draw a rectangle" do
     img = Rasem::SVGImage.new("", 100, 100) do
       rectangle(0, 0, 100, 300)
@@ -70,6 +88,15 @@ describe Rasem::SVGImage do
     str.should =~ %r{<rect}
     str.should =~ %r{width="100"}
     str.should =~ %r{height="300"}
+  end
+
+  it "should draw a rectangle with style" do
+    img = Rasem::SVGImage.new("", 100, 100) do
+      rectangle(0, 0, 10, 10, :fill=>"white")
+    end
+    str = img.output
+    str.should =~ %r{style=}
+    str.should =~ %r{fill:white}
   end
 
   it "should draw a symmetric round-rectangle" do
@@ -84,6 +111,15 @@ describe Rasem::SVGImage do
     str.should =~ %r{ry="20"}
   end
 
+  it "should draw a symmetric rounded-rectangle with style" do
+    img = Rasem::SVGImage.new("", 100, 100) do
+      rectangle(0, 0, 10, 10, 2, :fill=>"white")
+    end
+    str = img.output
+    str.should =~ %r{style=}
+    str.should =~ %r{fill:white}
+  end
+
   it "should draw a non-symmetric round-rectangle" do
     img = Rasem::SVGImage.new("", 100, 100) do
       rectangle(0, 0, 100, 300, 20, 5)
@@ -94,6 +130,15 @@ describe Rasem::SVGImage do
     str.should =~ %r{height="300"}
     str.should =~ %r{rx="20"}
     str.should =~ %r{ry="5"}
+  end
+
+  it "should draw a non-symmetric rounded-rectangle with style" do
+    img = Rasem::SVGImage.new("", 100, 100) do
+      rectangle(0, 0, 10, 10, 2, 4, :fill=>"white")
+    end
+    str = img.output
+    str.should =~ %r{style=}
+    str.should =~ %r{fill:white}
   end
   
   it "should draw an ellipse" do
@@ -108,6 +153,15 @@ describe Rasem::SVGImage do
     str.should =~ %r{ry="300"}
   end
 
+  it "should draw an ellipse with style" do
+    img = Rasem::SVGImage.new("", 100, 100) do
+      ellipse(0, 0, 3, 10, :fill=>"white")
+    end
+    str = img.output
+    str.should =~ %r{style=}
+    str.should =~ %r{fill:white}
+  end
+
   it "should draw a polygon given an array of points" do
     img = Rasem::SVGImage.new("", 100, 100) do
       polygon([[0,0], [1,2], [3,4]])
@@ -115,6 +169,15 @@ describe Rasem::SVGImage do
     str = img.output
     str.should =~ %r{<polygon}
     str.should =~ %r{points="0,0 1,2 3,4"}
+  end
+
+  it "should draw a polygon with style" do
+    img = Rasem::SVGImage.new("", 100, 100) do
+      polygon([[0,0], [1,2], [3,4]], :fill=>"white")
+    end
+    str = img.output
+    str.should =~ %r{style=}
+    str.should =~ %r{fill:white}
   end
 
   it "should draw a polyline given an array of points" do
