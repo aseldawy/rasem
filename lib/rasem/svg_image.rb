@@ -1,17 +1,13 @@
 class Rasem::SVGImage
   DefaultStyle = {:stroke=>"black", :fill=>"black"}
 
-  def initialize(*args, &block)
-    if args.length == 3
-      @output = create_output(args.shift)
-    else
-      @output = create_output(nil)
-    end
+  def initialize(width, height, output=nil, &block)
+    @output = create_output(output)
     
     # Initialize a stack of default styles
     @default_styles = [DefaultStyle]
 
-    write_header(*args)
+    write_header(width, height)
     if block
       self.instance_exec(&block)
       self.close
@@ -98,7 +94,7 @@ class Rasem::SVGImage
   
   def with_style(style={}, &proc)
     # Merge passed style with current default style
-    updated_style = default_style.update(style)
+    updated_style = default_style.merge(style)
     # Push updated style to the stack
     @default_styles.push(updated_style)
     # Call the block
@@ -159,8 +155,8 @@ private
       @output << "#{x},#{y}"
       @output << " " unless coords.empty?
     end
-    write_style(style)
     @output << '"/>'
+    write_style(style)
   end
   
   # Return current deafult style
