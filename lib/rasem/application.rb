@@ -12,7 +12,6 @@ class Rasem::Application
     end
 
     for source_file in source_files
-      puts "Source file #{source_file}"
       if source_file =~ /\.rasem$/
         svg_file = source_file.sub(/\.rasem$/, '.svg')
       else

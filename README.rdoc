@@ -1,6 +1,140 @@
-= rasem
+= Rasem
 
 rasem is a ruby gem that allows you to describe your images in ruby code.
+
+== Why Rasem
+
+* Have you ever wanted to visualize some data in a nice image?
+* Do you want to draw a complex image that is easier to describe using a code?
+* Would you like to power your HTML 5 site with nicely drawn SVG images?
+* Do you need to generate nice images from your ruby code?
+
+Rasem allows you to generate SVG images that can be easily exported to other
+formats and embed in an HTML 5 page.
+
+== Features
+
+* Draw basic elements: line, rectangle, rouned rectangle, circle, ellipse, polygon and polyline.
+* Use SVG styles such as stroke-width, opacity and fill.
+* Create SVG groups for better editing in SVG editors.
+
+== Installation
+  gem install rasem
+
+== Usage
+There are two main methods to generate images with Rasem.
+
+=== Command line
+Create a file with extension .rasem. Here is a sample file test.rasem
+  set_width 100
+  set_height 100
+  circle 20, 20, 5
+  circle 50, 50, 5
+  line 20, 20, 50, 50
+
+Save this file and execute the command
+  rasem test.rasem
+
+A file test.svg will be generated.
+
+=== Ruby code
+You can generate the image from your ruby code. This has several uses such as
+sending the image on the fly from a Rails application.
+
+Here is a simple example
+  require 'rasem'
+  img = Rasem::SVGImage.new(100,100) do
+    circle 20, 20, 5
+    circle 50, 50, 5
+    line 20, 20, 50, 50
+  end
+  
+  puts img.output
+
+img.output is the SVG code generated for this images.
+
+== More Examples
+The following examples are for .rasem files. These are actually ruby
+scripts that are executed to generate the image. So, you can write arbitrary
+ruby code in .rasem files as you will see.
+
+simple_graph.rasem
+  nodes = [[10,10], [20,20], [10,20]]
+  radius = 3
+  with_style :fill=>"white", :stroke=>"black" do
+    for node in nodes
+      circle node.first, node.last, radius
+    end
+  end
+  
+  line nodes[0].first, nodes[0].last, nodes[1].first, nodes[1].last,
+    :stroke=>"blue"
+
+Here is a more sophisticated example.
+
+tictactoe.rasem
+  set_width 150
+  set_height 150
+  board = [['x','o','x'], ['o', '-', 'o'], ['x', 'o', 'x']]
+  def draw_x(x,y)
+    group :stroke=>"red" do
+      line x-20, y-20, x+20, y+20
+      line x-20, y+20, x+20, y-20
+    end
+  end
+
+  def draw_o(x,y)
+    circle x, y, 20, :stroke=>"blue", :fill=>"white"
+  end
+
+  # Draw the board
+  group :stroke=>"black" do  
+    rectangle 0, 0, 150, 150, :stroke_width=>2, :fill=>"white"
+    line 50, 0, 50, 150
+    line 100, 0, 100, 150
+    line 0, 50, 150, 50
+    line 0, 100, 150, 100
+  end
+
+  board.each_with_index do |row, row_index|
+    row.each_with_index do |cell, column_index|
+      if cell == "x"
+        draw_x row_index * 50 + 25, column_index * 50 + 25
+      elsif cell == "o"
+        draw_o row_index * 50 + 25, column_index * 50 + 25
+      end
+    end
+  end
+
+Here are some examples that show how you can generate images from your ruby code.
+
+You can generate SVG and store it to file
+  img = Rasem::SVGImage.new(100, 100)
+  img.line(0, 0, 100, 100)
+  img.close
+
+  File.open("test.svg", w") do |f|
+    f << img.output
+  end
+
+You can use pass a block to SVGImage.new to make things more compact
+  img = Rasem::SVGImage.new(100, 100) do
+    line(0, 0, 100, 100)
+  end
+  # Image is closed automatically
+  # Write to file
+
+You can make your code even more compact by passing the file as a last argument
+to SVGImage.new
+  File.open("test.svg", "w") do |f|
+    Rasem::SVGImage.new(100, 100, f) do |f|
+      line(0, 0, 100, 100)
+    end
+  end
+
+The previous example has another advantage of not buffering the whole image to
+memory before writing to file. Rasem is smart enough to detect that the output
+can be passed directly to the file, hence, saving unnecessary memory buffers.
 
 == Contributing to rasem
  
