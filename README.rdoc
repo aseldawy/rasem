@@ -79,7 +79,7 @@ simple_graph.rasem
 
 Here is a more sophisticated example.
 
-  tictactoe.rasem
+tictactoe.rasem
   set_width 150
   set_height 150
   board = [['x', 'o', 'x'],
