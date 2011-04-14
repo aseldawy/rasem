@@ -1,11 +1,20 @@
 class Rasem::SVGImage
-  DefaultStyle = {:stroke=>"black", :fill=>"black"}
+  DefaultStyles = {
+    :text => {:fill=>"black"},
+    :line => {:stroke=>"black"},
+    :rect => {:stroke=>"black"},
+    :circle => {:stroke=>"black"},
+    :ellipse => {:stroke=>"black"},
+    :polygon => {:stroke=>"black"},
+    :polyline => {:stroke=>"black"}
+  }
+    
 
   def initialize(width, height, output=nil, &block)
     @output = create_output(output)
     
     # Initialize a stack of default styles
-    @default_styles = [DefaultStyle]
+    @default_styles = []
 
     write_header(width, height)
     if block
@@ -31,14 +40,14 @@ class Rasem::SVGImage
   end
 
   # Draw a straight line between the two end points
-  def line(x1, y1, x2, y2, style={})
+  def line(x1, y1, x2, y2, style=DefaultStyles[:line])
     @output << %Q{<line x1="#{x1}" y1="#{y1}" x2="#{x2}" y2="#{y2}"}
     write_style(style)
     @output << %Q{/>}
   end
   
   # Draw a circle given a center and a radius
-  def circle(cx, cy, r, style={})
+  def circle(cx, cy, r, style=DefaultStyles[:circle])
     @output << %Q{<circle cx="#{cx}" cy="#{cy}" r="#{r}"}
     write_style(style)
     @output << %Q{/>}
@@ -46,7 +55,7 @@ class Rasem::SVGImage
  
   # Draw a rectangle or rounded rectangle 
   def rectangle(x, y, width, height, *args)
-    style = (!args.empty? && args.last.is_a?(Hash)) ? args.pop : {}
+    style = (!args.empty? && args.last.is_a?(Hash)) ? args.pop : DefaultStyles[:rect]
     if args.length == 0
       rx = ry = 0
     elsif args.length == 1
@@ -64,7 +73,7 @@ class Rasem::SVGImage
   end
  
   # Draw an circle given a center and two radii
-  def ellipse(cx, cy, rx, ry, style={})
+  def ellipse(cx, cy, rx, ry, style=DefaultStyles[:ellipse])
     @output << %Q{<ellipse cx="#{cx}" cy="#{cy}" rx="#{rx}" ry="#{ry}"}
     write_style(style)
     @output << %Q{/>}
@@ -114,6 +123,23 @@ class Rasem::SVGImage
     @output << "</g>"
   end
   
+  def text(x, y, text, style=DefaultStyles[:text])
+    @output << %Q{<text x="#{x}" y="#{y}"}
+    style = fix_style(default_style.merge(style))
+    @output << %Q{ font-family="#{style.delete "font-family"}"} if style["font-family"]
+    @output << %Q{ font-size="#{style.delete "font-size"}"} if style["font-size"]
+    write_style style
+    @output << ">"
+    dy = 0      # First line should not be shifted
+    text.each_line do |line|
+      @output << %Q{<tspan x="#{x}" dy="#{dy}em">}
+      dy = 1    # Next lines should be shifted
+      @output << line.rstrip
+      @output << "</tspan>"
+    end
+    @output << "</text>"
+  end
+  
 private
   # Creates an object for ouput out of an argument
   def create_output(arg)
@@ -145,7 +171,7 @@ private
   # Draws either a polygon or polyline according to the first parameter
   def polything(name, *args)
     return if args.empty?
-    style = (args.last.is_a?(Hash)) ? args.pop : {}
+    style = (args.last.is_a?(Hash)) ? args.pop : DefaultStyles[name.to_sym]
     coords = args.flatten
     raise "Illegal number of coordinates (should be even)" if coords.length.odd?
     @output << %Q{<#{name} points="}
@@ -164,6 +190,16 @@ private
     @default_styles.last || {}
   end
   
+  # Returns a new hash for styles after fixing names to match SVG standard
+  def fix_style(style)
+    new_style = {}
+    style.each_pair do |k, v|
+      new_k = k.to_s.gsub('_', '-')
+      new_style[new_k] = v
+    end
+    new_style
+  end
+  
   # Writes styles to current output
   # Avaialable styles are:
   # fill: Fill color
@@ -173,11 +209,11 @@ private
   # stroke-opacity: stroke opacity. ranges from 0 to 1
   # opacity: Opacity for the whole element
   def write_style(style)
-    style_ = default_style.merge(style)
+    style_ = fix_style(default_style.merge(style))
     return if style_.empty?
     @output << ' style="'
-    style_.each_pair do |style, value|
-      @output << "#{style.to_s.gsub('_','-')}:#{value};"
+    style_.each_pair do |attribute, value|
+      @output << "#{attribute}:#{value};"
     end
     @output << '"'
   end

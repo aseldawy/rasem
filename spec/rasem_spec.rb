@@ -270,4 +270,32 @@ describe Rasem::SVGImage do
     str.should =~ %r{height="300"}
   end
 
+  it "should draw text" do
+    img = Rasem::SVGImage.new(100, 100) do
+      text 10, 20, "Hello world!"
+    end
+    str = img.output
+    str.should =~ %r{<text}
+    str.should =~ %r{x="10"}
+    str.should =~ %r{y="20"}
+    str.should =~ %r{Hello world!}
+  end
+
+  it "should draw multiline text" do
+    img = Rasem::SVGImage.new(100, 100) do
+      text 10, 20, "Hello\nworld!"
+    end
+    str = img.output
+    str.should =~ %r{<text.*tspan.*tspan.*</text}
+  end
+  
+  it "should draw text with font" do
+    img = Rasem::SVGImage.new(100, 100) do
+      text 10, 20, "Hello\nworld!", :font_family=>"Times", "font-size"=>24
+    end
+    str = img.output
+    str.should =~ %r{font-family="Times"}
+    str.should =~ %r{font-size="24"}
+  end
+
 end
