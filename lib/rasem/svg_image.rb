@@ -8,11 +8,11 @@ class Rasem::SVGImage
     :polygon => {:stroke=>"black"},
     :polyline => {:stroke=>"black"}
   }
-    
+
 
   def initialize(width, height, output=nil, &block)
     @output = create_output(output)
-    
+
     # Initialize a stack of default styles
     @default_styles = []
 
@@ -22,7 +22,7 @@ class Rasem::SVGImage
       self.close
     end
   end
-  
+
   def set_width(new_width)
     if @output.respond_to?(:sub!)
       @output.sub!(/<svg width="[^"]+"/, %Q{<svg width="#{new_width}"})
@@ -30,7 +30,7 @@ class Rasem::SVGImage
       raise "Cannot change width after initialization for this output"
     end
   end
-  
+
   def set_height(new_height)
     if @output.respond_to?(:sub!)
       @output.sub!(/<svg width="([^"]+)" height="[^"]+"/, %Q{<svg width="\\1" height="#{new_height}"})
@@ -45,15 +45,15 @@ class Rasem::SVGImage
     write_style(style)
     @output << %Q{/>}
   end
-  
+
   # Draw a circle given a center and a radius
   def circle(cx, cy, r, style=DefaultStyles[:circle])
     @output << %Q{<circle cx="#{cx}" cy="#{cy}" r="#{r}"}
     write_style(style)
     @output << %Q{/>}
   end
- 
-  # Draw a rectangle or rounded rectangle 
+
+  # Draw a rectangle or rounded rectangle
   def rectangle(x, y, width, height, *args)
     style = (!args.empty? && args.last.is_a?(Hash)) ? args.pop : DefaultStyles[:rect]
     if args.length == 0
@@ -65,42 +65,42 @@ class Rasem::SVGImage
     else
       raise "Illegal number of arguments to rectangle"
     end
-      
+
     @output << %Q{<rect x="#{x}" y="#{y}" width="#{width}" height="#{height}"}
     @output << %Q{ rx="#{rx}" ry="#{ry}"} if rx && ry
     write_style(style)
     @output << %Q{/>}
   end
- 
+
   # Draw an circle given a center and two radii
   def ellipse(cx, cy, rx, ry, style=DefaultStyles[:ellipse])
     @output << %Q{<ellipse cx="#{cx}" cy="#{cy}" rx="#{rx}" ry="#{ry}"}
     write_style(style)
     @output << %Q{/>}
   end
-  
+
   def polygon(*args)
     polything("polygon", *args)
   end
-   
+
   def polyline(*args)
     polything("polyline", *args)
   end
-  
+
   # Closes the file. No more drawing is possible after this
   def close
     write_close
     @closed = true
   end
-  
+
   def output
     @output.to_s
   end
-  
+
   def closed?
     @closed
   end
-  
+
   def with_style(style={}, &proc)
     # Merge passed style with current default style
     updated_style = default_style.merge(style)
@@ -122,7 +122,7 @@ class Rasem::SVGImage
     # Close the group
     @output << "</g>"
   end
-  
+
   def text(x, y, text, style=DefaultStyles[:text])
     @output << %Q{<text x="#{x}" y="#{y}"}
     style = fix_style(default_style.merge(style))
@@ -139,7 +139,7 @@ class Rasem::SVGImage
     end
     @output << "</text>"
   end
-  
+
 private
   # Creates an object for ouput out of an argument
   def create_output(arg)
@@ -151,7 +151,7 @@ private
       raise "Illegal output object: #{arg.inspect}"
     end
   end
-  
+
   # Writes file header
   def write_header(width, height)
     @output << <<-HEADER
@@ -162,12 +162,12 @@ private
   xmlns="http://www.w3.org/2000/svg">
     HEADER
   end
-  
+
   # Write the closing tag of the file
   def write_close
     @output << "</svg>"
   end
-  
+
   # Draws either a polygon or polyline according to the first parameter
   def polything(name, *args)
     return if args.empty?
@@ -181,15 +181,16 @@ private
       @output << "#{x},#{y}"
       @output << " " unless coords.empty?
     end
-    @output << '"/>'
+    @output << '"'
     write_style(style)
+    @output << '/>'
   end
-  
+
   # Return current deafult style
   def default_style
     @default_styles.last || {}
   end
-  
+
   # Returns a new hash for styles after fixing names to match SVG standard
   def fix_style(style)
     new_style = {}
@@ -199,7 +200,7 @@ private
     end
     new_style
   end
-  
+
   # Writes styles to current output
   # Avaialable styles are:
   # fill: Fill color
@@ -218,3 +219,4 @@ private
     @output << '"'
   end
 end
+
