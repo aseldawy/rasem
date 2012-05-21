@@ -39,6 +39,12 @@ class Rasem::SVGImage
     end
   end
 
+  # draw an image
+  def image(x, y, width, height, href)
+    @output << %Q{<image x="#{x}" y="#{y}" height="#{height}" width="#{width}" xlink:href="#{href}"}
+    @output << %Q{/>}
+  end
+
   # Draw a straight line between the two end points
   def line(x1, y1, x2, y2, style=DefaultStyles[:line])
     @output << %Q{<line x1="#{x1}" y1="#{y1}" x2="#{x2}" y2="#{y2}"}
@@ -159,7 +165,7 @@ private
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
   "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <svg width="#{width}" height="#{height}" version="1.1"
-  xmlns="http://www.w3.org/2000/svg">
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
     HEADER
   end
 
