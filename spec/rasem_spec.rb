@@ -259,6 +259,16 @@ describe Rasem::SVGImage do
     str = img.output
     str.should =~ %r{<g .*circle.*circle.*</g>}
   end
+
+  it "should apply transforms to a group" do
+    img = Rasem::SVGImage.new(100, 100) do
+      group({}, {:scale => 5, :translate => [15,20]}) do
+        circle(0, 0, 10)
+      end
+    end
+    str = img.output
+    str.should =~ %r{scale\(5\)translate\(15,20\)}
+  end
   
   it "should update width and height after init" do
     img = Rasem::SVGImage.new(100, 100) do

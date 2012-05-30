@@ -118,10 +118,11 @@ class Rasem::SVGImage
     @default_styles.pop
   end
 
-  def group(style={}, &proc)
+  def group(style={}, transforms={}, &proc)
     # Open the group
     @output << "<g"
     write_style(style)
+    write_transforms(transforms)
     @output << ">"
     # Call the block
     self.instance_exec(&proc)
@@ -224,5 +225,17 @@ private
     end
     @output << '"'
   end
+
+  def write_transforms(transforms)
+    return if transforms.empty?
+    @output << ' transform="'
+    transforms.each_pair do |attribute, value|
+      value = [value] unless value.is_a?(Array)
+      @output << "#{attribute}(#{value.join(',')})"
+    end
+    @output << '"'
+  end
+
+
 end
 
