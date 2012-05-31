@@ -308,4 +308,17 @@ describe Rasem::SVGImage do
     str.should =~ %r{font-size="24"}
   end
 
+  it "should include an image" do
+    img = Rasem::SVGImage.new(100, 100) do
+      image 10, 20, 30, 40, 'image.png'
+    end
+    str = img.output
+    str.should =~ %r{<image}
+    str.should =~ %r{x="10"}
+    str.should =~ %r{y="20"}
+    str.should =~ %r{width="30"}
+    str.should =~ %r{height="40"}
+    str.should =~ %r{xlink:href="image.png"}
+  end
+
 end
