@@ -1,3 +1,100 @@
+
+class Rasem::SVGTag
+  @@elements = {
+    :animation => ["animate", "animateColor", "animateMotion", "animateTransform", "set"],
+    :description => ["desc", "metadata", "title"],
+    :shape => ["circle", "elipse", "line", "path", "polygon", "polyline", "rect"],
+    :structure => ["defs", "g", "svg", "symbol", "use"],
+    :gradient => ["linearGradient", "radialGradient"],
+    :other => ["a", "color-profile", "cursor", "filter", "font", "image", "marker", "mask", "pattern", "script", "style", "switch", "text", "view"],
+  }
+  #complete documentation as in w3.org
+  @@valid_children = {
+    :svg    => [ @@elements.values ].flatten!,
+    :g      => [ @@elements.values ].flatten!,
+  }
+
+  def initialize(tag, params={}, output=nil)
+    @output = bind_output(output)
+    @tag = bind_tag(tag)
+    @params = bind_params(params)
+  end
+
+  def bind_output(output)
+    if output.nil?
+      ""
+    elsif output.respond_to?(:<<)
+      arg
+    else
+      raise "Illegal output object: #{arg.inspect}"
+    end
+  end
+
+  def bind_tag(tag)
+    #TODO: make tag string validation?
+    tag
+  end
+
+  def bind_params(params)
+    #TODO: make a list of valid parameters for all tags (see SVG docs)
+    params
+  end
+
+  def method_missing(meth, *args, &block)
+    if @@valid_children[@tag].include?(meth.to_s)
+      spawn_child(meth.to_s, *args, &block)
+    else
+      super
+    end
+  end
+
+  def open(oneline = false)
+    raise "Should not open a tag repeatedly!" if @open
+    @output << "<#{@tag}"
+    @params.each do |parameter, value|
+      @output << "#{parameter}=#{value};"
+    end
+    if oneline
+      @output << "/>"
+    else
+      @output << ">"
+      @open = true
+    end
+  end
+
+  def open_close()
+    open(true)
+  end
+
+  def close()
+    raise "Should open a tag in order to close it!" unless @open
+    @output << "</#{@tag}>"
+    @open = false
+  end
+end
+
+
+
+class Rasem::SVGContainer < Rasem::SVGTag
+  def initialize(tag, params={}, output=nil, &block)
+    super(tag,params,output)
+    if block
+      super.open()
+      block.call()
+      super.close()
+    end
+  end
+
+  def spawn_child(tag, *args, &block)
+    if @child and @child.open
+      @child.spawn_child(tag, *args, &block)
+    else
+      @child = Rasem::SVGContainer.new(tag, args[0], @output, &block)
+    end
+  end
+end
+
+
 class Rasem::SVGImage
   DefaultStyles = {
     :text => {:fill=>"black"},
@@ -10,7 +107,7 @@ class Rasem::SVGImage
   }
 
 
-  def initialize(width, height, output=nil, &block)
+  def initialize(params = {}, output=nil, &block)
     @output = create_output(output)
 
     # Initialize a stack of default styles
