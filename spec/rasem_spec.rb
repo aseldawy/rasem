@@ -1,5 +1,100 @@
 require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
 
+describe Rasem::SVGTag do
+  it "should create an empty tag" do
+    tag = Rasem::SVGTag.new("svg")
+    tag.open_close
+    str = tag.output
+    str.should =~ %r{<svg />}
+  end 
+
+  it "should create a tag with parameters" do
+    tag = Rasem::SVGTag.new("svg", :width=>"100%", :height=>"100%")
+    tag.open_close
+    str = tag.output
+    str.should =~ %r{<svg width="100%" height="100%" />}
+  end 
+
+  it "should write to supplied buffer" do
+    output = ""
+    tag = Rasem::SVGTag.new("svg", :width=>"100%", :height=>"100%", :output=>output)
+    tag.open_close
+    output.should =~ %r{<svg width="100%" height="100%" />}
+  end 
+
+  it "should call parent method on opening and closing" do
+    parent = mock("parent")
+    tag = Rasem::SVGTag.new("svg", :width=>"100%", :height=>"100%", :parent=>parent)
+    parent.should_receive('open_child').with(tag)
+    parent.should_receive('close_child').with(tag)
+    tag.open_close
+  end 
+
+  it "should call spawn_child if possible to add that child" do
+    tag = Rasem::SVGTag.new("svg", :width=>"100%", :height=>"100%")
+    tag.should_receive('spawn_child').with('g')
+    tag.g
+  end 
+
+  it "should not call spawn_child if possible to add that child" do
+    tag = Rasem::SVGTag.new("svg", :width=>"100%", :height=>"100%")
+    tag.should_not_receive('spawn_child').with('ggr')
+    expect { tag.ggr }.to raise_error
+  end 
+end
+
+describe Rasem::SVGContainer do
+  it "should create an empty tag" do
+    con = Rasem::SVGContainer.new("svg")
+    con.open_close
+    str = con.output
+    str.should =~ %r{<svg />}
+  end
+
+  it "should allow to execute a block within" do
+    con = Rasem::SVGContainer.new("svg") do
+    end
+    str = con.output
+    str.should =~ %r{<svg ></svg>}
+  end
+
+  it "should insert a child from block within" do
+    con = Rasem::SVGContainer.new("svg",:height=>"100%") do |svg|
+      svg.g :height=>"10" do |group|
+      end
+    end
+    str = con.output
+    str.should =~ %r{<svg height="100%" ><g height="10" ></g></svg>}
+  end
+
+  it "should insert a child by method call" do
+    svg = Rasem::SVGContainer.new("svg",:height=>"100%")
+    svg.open
+    g = svg.g :id=>"G1"
+    g.open_close
+    g = svg.g :id=>"G2"
+    g.open_close
+    svg.close
+    str = svg.output
+    str.should =~ %r{<svg height="100%" ><g id="G1" /><g id="G2" /></svg>}
+  end
+
+  it "should nest easily" do
+    svg = Rasem::SVGContainer.new("svg") do |svg|
+      svg.g do |g|
+        g.g do |g|
+          g.g do |g|
+            g.g do |g|
+            end
+          end
+        end
+      end
+    end
+    svg.output.should =~ %r{<svg ><g ><g ><g ><g ></g></g></g></g></svg>}
+  end
+
+end
+
 describe Rasem::SVGImage do
   it "should initialize an empty image" do
     img = Rasem::SVGImage.new(100, 100)

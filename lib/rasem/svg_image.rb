@@ -14,8 +14,11 @@ class Rasem::SVGTag
     :g      => [ @@elements.values ].flatten!,
   }
 
-  def initialize(tag, params={}, output=nil)
-    @output = bind_output(output)
+  attr_reader :tag, :parent, :child
+
+  def initialize(tag, params={})
+    @output = bind_output(params.delete :output)
+    @parent = params.delete :parent
     @tag = bind_tag(tag)
     @params = bind_params(params)
   end
@@ -24,9 +27,9 @@ class Rasem::SVGTag
     if output.nil?
       ""
     elsif output.respond_to?(:<<)
-      arg
+      output
     else
-      raise "Illegal output object: #{arg.inspect}"
+      raise "Illegal output object: #{output.inspect}"
     end
   end
 
@@ -41,7 +44,7 @@ class Rasem::SVGTag
   end
 
   def method_missing(meth, *args, &block)
-    if @@valid_children[@tag].include?(meth.to_s)
+    if @@valid_children[@tag.to_sym].include?(meth.to_s)
       spawn_child(meth.to_s, *args, &block)
     else
       super
@@ -50,12 +53,14 @@ class Rasem::SVGTag
 
   def open(oneline = false)
     raise "Should not open a tag repeatedly!" if @open
-    @output << "<#{@tag}"
+    @parent.open_child(self) if @parent
+    @output << "<#{@tag} "
     @params.each do |parameter, value|
-      @output << "#{parameter}=#{value};"
+      @output << "#{parameter}=\"#{value}\" "
     end
     if oneline
       @output << "/>"
+      @parent.close_child(self) if @parent
     else
       @output << ">"
       @open = true
@@ -70,28 +75,48 @@ class Rasem::SVGTag
     raise "Should open a tag in order to close it!" unless @open
     @output << "</#{@tag}>"
     @open = false
+    @parent.close_child(self) if @parent
+  end
+
+  def output()
+    @output.to_s
   end
 end
 
 
 
 class Rasem::SVGContainer < Rasem::SVGTag
-  def initialize(tag, params={}, output=nil, &block)
-    super(tag,params,output)
+  def initialize(tag, params={}, &block)
+    super(tag,params)
+    @children = []
+    @child = nil
     if block
-      super.open()
-      block.call()
-      super.close()
+      self.open()
+      block.call(self)
+      self.close()
     end
   end
 
-  def spawn_child(tag, *args, &block)
-    if @child and @child.open
-      @child.spawn_child(tag, *args, &block)
-    else
-      @child = Rasem::SVGContainer.new(tag, args[0], @output, &block)
-    end
+  def spawn_child(tag, params={}, &block)
+    raise "Tag #{@tag} contains not closed child! May not add another in this scope." if @child
+    #Pass output and self down the hierarchy
+    params[:output] = @output
+    params[:parent] = self
+    @child = Rasem::SVGContainer.new(tag, params, &block)
   end
+
+  def open_child(child)
+    raise "Bad hierarchy" unless child.parent == self
+    @child = child
+  end
+  
+  def close_child(child)
+    raise "Bad hierarchy" unless @child == child
+    #Append closed child to children list.
+    @children.push(child)
+    @child = nil
+  end
+  
 end
 
 
