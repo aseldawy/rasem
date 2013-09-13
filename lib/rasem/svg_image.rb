@@ -1,39 +1,5 @@
 
-require 'svg_documentation.rb'
-
 class Rasem::SVGTag
-  @@elements = {
-    :animation => ["animate", "animateColor", "animateMotion", "animateTransform", "set"],
-    :description => ["desc", "metadata", "title"],
-    :shape => ["circle", "elipse", "line", "path", "polygon", "polyline", "rect"],
-    :structure => ["defs", "g", "svg", "symbol", "use"],
-    :gradient => ["linearGradient", "radialGradient"],
-    :other => ["a", "color-profile", "cursor", "filter", "font", "image", "marker", "mask", "pattern", "script", "style", "switch", "text", "view"],
-  }
-
-  @@attributes = {
-  }
-
-  @@valid_children = {
-    :svg    => [ @@elements.values ].flatten!,
-    :g      => [ @@elements.values ].flatten!,
-  }
-
-  @@aliases = {
-    :group  => :g,
-    :description => :desc,
-  }
-
-  #complete documentation as in w3.org
-  @@svg_standard = {
-    :svg    => 
-    {
-      :allowed_elements => [ @@elements.values ].flatten!,
-      :allowed_attributes => 
-
-    },
-  }
-
   attr_reader :tag, :parent, :child
 
   def initialize(tag, params={})
@@ -54,7 +20,7 @@ class Rasem::SVGTag
   end
 
   def bind_tag(tag)
-    #TODO: make tag string validation?
+    raise "#{tag} is not a valid tag" unless Rasem::SVG_ELEMENTS.include?(tag.to_sym)
     tag
   end
 
