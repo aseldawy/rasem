@@ -1,4 +1,6 @@
 
+require 'svg_documentation.rb'
+
 class Rasem::SVGTag
   @@elements = {
     :animation => ["animate", "animateColor", "animateMotion", "animateTransform", "set"],
@@ -8,10 +10,28 @@ class Rasem::SVGTag
     :gradient => ["linearGradient", "radialGradient"],
     :other => ["a", "color-profile", "cursor", "filter", "font", "image", "marker", "mask", "pattern", "script", "style", "switch", "text", "view"],
   }
-  #complete documentation as in w3.org
+
+  @@attributes = {
+  }
+
   @@valid_children = {
     :svg    => [ @@elements.values ].flatten!,
     :g      => [ @@elements.values ].flatten!,
+  }
+
+  @@aliases = {
+    :group  => :g,
+    :description => :desc,
+  }
+
+  #complete documentation as in w3.org
+  @@svg_standard = {
+    :svg    => 
+    {
+      :allowed_elements => [ @@elements.values ].flatten!,
+      :allowed_attributes => 
+
+    },
   }
 
   attr_reader :tag, :parent, :child
@@ -43,14 +63,6 @@ class Rasem::SVGTag
     params
   end
 
-  def method_missing(meth, *args, &block)
-    if @@valid_children[@tag.to_sym].include?(meth.to_s)
-      spawn_child(meth.to_s, *args, &block)
-    else
-      super
-    end
-  end
-
   def open(oneline = false)
     raise "Should not open a tag repeatedly!" if @open
     @parent.open_child(self) if @parent
@@ -67,6 +79,10 @@ class Rasem::SVGTag
     end
   end
 
+  def opened?
+    @open
+  end
+
   def open_close()
     open(true)
   end
@@ -76,6 +92,10 @@ class Rasem::SVGTag
     @output << "</#{@tag}>"
     @open = false
     @parent.close_child(self) if @parent
+  end
+
+  def closed?
+    not @open
   end
 
   def output()
@@ -92,7 +112,7 @@ class Rasem::SVGContainer < Rasem::SVGTag
     @child = nil
     if block
       self.open()
-      block.call(self)
+      instance_exec &block
       self.close()
     end
   end
@@ -103,6 +123,14 @@ class Rasem::SVGContainer < Rasem::SVGTag
     params[:output] = @output
     params[:parent] = self
     @child = Rasem::SVGContainer.new(tag, params, &block)
+  end
+
+  def method_missing(meth, *args, &block)
+    if @@valid_children[@tag.to_sym].include?(meth.to_s)
+      spawn_child(meth.to_s, *args, &block)
+    else
+      super
+    end
   end
 
   def open_child(child)
@@ -135,14 +163,21 @@ class Rasem::SVGImage
   def initialize(params = {}, output=nil, &block)
     @output = create_output(output)
 
+    params["version"] = "1.1" unless params["version"]
+    params["xmlns"] = "http://www.w3.org/2000/svg" unless params["xmlns"]
+    params["xmlns:xlink"] = "http://www.w3.org/1999/xlink" unless params["xmlns:xlink"]
+    params[:output] = @output
+
+    write_header()
+
+    @svg = Rasem::SVGContainer.new("svg", params, &block)
+
+    #auto open file tag.
+    @svg.open() unless block
+
     # Initialize a stack of default styles
     @default_styles = []
 
-    write_header(width, height)
-    if block
-      self.instance_exec(&block)
-      self.close
-    end
   end
 
   def set_width(new_width)
@@ -218,7 +253,6 @@ class Rasem::SVGImage
   # Closes the file. No more drawing is possible after this
   def close
     write_close
-    @closed = true
   end
 
   def output
@@ -226,7 +260,7 @@ class Rasem::SVGImage
   end
 
   def closed?
-    @closed
+    @svg.closed?
   end
 
   def with_style(style={}, &proc)
@@ -282,19 +316,16 @@ private
   end
 
   # Writes file header
-  def write_header(width, height)
+  def write_header()
     @output << <<-HEADER
 <?xml version="1.0" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
-  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg width="#{width}" height="#{height}" version="1.1"
-  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
     HEADER
   end
 
   # Write the closing tag of the file
   def write_close
-    @output << "</svg>"
+    @svg.close()
   end
 
   # Draws either a polygon or polyline according to the first parameter
