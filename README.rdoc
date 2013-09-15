@@ -37,8 +37,8 @@ There are two main methods to generate images with Rasem.
 
 === Command line
 Create a file with extension .rasem. Here is a sample file test.rasem
-  set_width 100
-  set_height 100
+  self.width = 100
+  self.height = 100
   circle 20, 20, 5
   circle 50, 50, 5
   line 20, 20, 50, 50
@@ -54,7 +54,7 @@ sending the image on the fly from a Rails application.
 
 Here is a simple example
   require 'rasem'
-  img = Rasem::SVGImage.new(100,100) do
+  img = Rasem::SVGImage.new(:width=>100, :height=>100) do
     circle 20, 20, 5
     circle 50, 50, 5
     line 20, 20, 50, 50
@@ -84,8 +84,8 @@ simple_graph.rasem
 Here is a more sophisticated example.
 
 tictactoe.rasem
-  set_width 150
-  set_height 150
+  self.width = 150
+  self.height = 150
   board = [['x', 'o', 'x'],
            ['o', '-', 'o'],
            ['x', 'o', 'x']]
@@ -121,12 +121,12 @@ tictactoe.rasem
 Here are some examples that show how you can generate images from your ruby code.
 
 You can generate SVG and store it to file
-  img = Rasem::SVGImage.new(100, 100)
+  img = Rasem::SVGImage.new(:width => 100, :height => 100)
   img.line(0, 0, 100, 100)
-  img.close
+  
 
   File.open("test.svg", w") do |f|
-    f << img.output
+    img.write(f)
   end
 
 You can use pass a block to SVGImage.new to make things more compact
@@ -139,15 +139,11 @@ You can use pass a block to SVGImage.new to make things more compact
 You can make your code even more compact by passing the file as a last argument
 to SVGImage.new
   File.open("test.svg", "w") do |f|
-    Rasem::SVGImage.new(100, 100, f) do |f|
+    Rasem::SVGImage.new({:width => 100, :height => 100}, f) do
       line(0, 0, 100, 100)
     end
   end
 
-The previous example has another advantage.
-It does not need to buffer the whole image to memory before writing to file.
-Rasem is smart enough to detect that the output can be passed directly to the
-file, hence, saving unnecessary memory buffers.
 
 == Contributing to rasem
 * Check out the latest master to make sure the feature hasn't been implemented or the bug hasn't been fixed yet

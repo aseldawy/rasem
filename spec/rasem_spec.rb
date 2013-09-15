@@ -168,6 +168,13 @@ describe Rasem::SVGImage do
     str.should =~ /<svg.*width="100".*height="100"/
   end
 
+  it "should initialize an empty image in given output" do
+    str = ""
+    img = Rasem::SVGImage.new({:width=>"100", :height=>"100"}, str) do
+    end
+    str.should =~ /<svg.*width="100".*height="100"/
+  end
+
   it "should initialize XML correctly" do
     img = Rasem::SVGImage.new(:width=>"100", :height=>"100")
     str = ""
