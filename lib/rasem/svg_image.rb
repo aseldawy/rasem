@@ -6,37 +6,39 @@ Rasem::SVG_ALIAS = {
 Rasem::SVG_EXPANSION = {
   :line   => [:x1,:y1,:x2,:y2],
   :circle => [:cx,:cy,:r],
-  :image  => [:x,:y,:height,:width,:"xlink:href"],
+  :image  => [:x,:y,:width,:height,:"xlink:href"],
   :ellipse => [:cx,:cy,:rx,:ry],
+  :text   => [:x,:y],
+
   :rect   => lambda do |args|
-    raise "Wrong unnamed argument count" unless args.size == 4 or args.size == 5 or args.size == 6
-    result = {
-      :x => args[0],
-      :y => args[1],
-      :width => args[2],
-      :height => args[3],
-    }
-    if (args.size > 4)
-      result[:rx] = args[4]
-      result[:ry] = (args[5] or args[4])
-    end
-    return result
+  raise "Wrong unnamed argument count" unless args.size == 4 or args.size == 5 or args.size == 6
+  result = {
+    :x => args[0],
+    :y => args[1],
+    :width => args[2],
+    :height => args[3],
+  }
+  if (args.size > 4)
+    result[:rx] = args[4]
+    result[:ry] = (args[5] or args[4])
+  end
+  return result
   end,
+
   :polygon => lambda do |args|
-    args.flatten!
-    raise "Illegal number of coordinates (should be even)" if args.length.odd?
-    p args
-    return {
-      :points => args
-    }
+  args.flatten!
+  raise "Illegal number of coordinates (should be even)" if args.length.odd?
+  return {
+    :points => args
+  }
   end,
+
   :polyline => lambda do |args|
-    args.flatten!
-    raise "Illegal number of coordinates (should be even)" if args.length.odd?
-    p args
-    return {
-      :points => args
-    }
+  args.flatten!
+  raise "Illegal number of coordinates (should be even)" if args.length.odd?
+  return {
+    :points => args
+  }
   end
 }
 
@@ -68,6 +70,16 @@ Rasem::CSS_STYLE = [
   :stroke_opacity,
   :opacity,
 ]
+
+class Rasem::SVGRaw
+  def initialize(data)
+    @data = data
+  end
+
+  def write(output)
+    output << @data.to_s
+  end
+end
 
 class Rasem::SVGTag
   attr_reader :tag, :attributes, :children
@@ -140,6 +152,13 @@ class Rasem::SVGTag
     end
   end
 
+  #special case for raw blocks.
+  def raw(data)
+    child = Rasem::SVGRaw.new(data)
+    @children.push(child)
+    child
+  end
+
   def spawn_child(tag, *args, &block)
     #expected args: nil, [hash], [...]
     parameters = {} if args.size == 0
@@ -165,6 +184,9 @@ class Rasem::SVGTag
     end
   end
   # add default parameters if they are not overwritten
+  merge_defaults().each do |key, value|
+    parameters[key] = value unless parameters[key]
+  end if @defaults
   Rasem::SVG_DEFAULTS[tag.to_sym].each do |key, value|
     parameters[key] = value unless parameters[key]
   end if Rasem::SVG_DEFAULTS[tag.to_sym]
@@ -174,7 +196,32 @@ end
 
 def append_child(child)
   @children.push(child)
+  child.push_defaults(merge_defaults()) if @defaults
   child
+end
+
+def merge_defaults()
+  result = {}
+  return result if @defaults.empty?
+  @defaults.each { |d| result.merge!(d) }
+  result
+end
+
+def push_defaults(defaults)
+  @defaults = [] unless @defaults
+  @defaults.push(defaults)
+end
+
+def pop_defaults()
+  @defaults.pop()
+end
+
+def with_style(style={}, &proc)
+  push_defaults(style)
+  # Call the block
+  self.instance_exec(&proc)
+  # Pop style again to revert changes
+  pop_defaults()
 end
 
 def validate_child_name(name)
@@ -218,7 +265,6 @@ def write(output)
     elsif attribute == :style
       write_styles(value, output)
     elsif attribute == :points
-      p "Writing points"
       write_points(value, output)
     else
       output << "#{value.to_s}"
@@ -244,9 +290,6 @@ class Rasem::SVGImage < Rasem::SVGTag
     params[:"xmlns:xlink"] = "http://www.w3.org/1999/xlink" unless params[:"xmlns:xlink"]
     super("svg", params, &block)
 
-    # Initialize a stack of default styles
-    @default_styles = []
-
     @output = (output or "")
     validate_output(@output) if output
 
@@ -255,34 +298,23 @@ class Rasem::SVGImage < Rasem::SVGTag
     end
   end
 
-  def with_style(style={}, &proc)
-    # Merge passed style with current default style
-    updated_style = default_style.merge(style)
-    # Push updated style to the stack
-    @default_styles.push(updated_style)
-    # Call the block
-    self.instance_exec(&proc)
-    # Pop style again to revert changes
-    @default_styles.pop
-  end
 
-
-  def text(x, y, text, style=DefaultStyles[:text])
-    @output << %Q{<text x="#{x}" y="#{y}"}
-    style = fix_style(default_style.merge(style))
-    @output << %Q{ font-family="#{style.delete "font-family"}"} if style["font-family"]
-    @output << %Q{ font-size="#{style.delete "font-size"}"} if style["font-size"]
-    write_style style
-    @output << ">"
-    dy = 0      # First line should not be shifted
-    text.each_line do |line|
-      @output << %Q{<tspan x="#{x}" dy="#{dy}em">}
-      dy = 1    # Next lines should be shifted
-      @output << line.rstrip
-      @output << "</tspan>"
-    end
-    @output << "</text>"
-  end
+  #def text(x, y, text, style=DefaultStyles[:text])
+  #  @output << %Q{<text x="#{x}" y="#{y}"}
+  #  style = fix_style(default_style.merge(style))
+ #   @output << %Q{ font-family="#{style.delete "font-family"}"} if style["font-family"]
+ #   @output << %Q{ font-size="#{style.delete "font-size"}"} if style["font-size"]
+ #   write_style style
+ #   @output << ">"
+ #   dy = 0      # First line should not be shifted
+ #   text.each_line do |line|
+ #     @output << %Q{<tspan x="#{x}" dy="#{dy}em">}
+ #     dy = 1    # Next lines should be shifted
+ #     @output << line.rstrip
+ #     @output << "</tspan>"
+ #   end
+ #   @output << "</text>"
+ # end
 
   def write(output)
     validate_output(output)
@@ -290,9 +322,10 @@ class Rasem::SVGImage < Rasem::SVGTag
     super(output)
   end
 
-  def <<(output)
-    write(output)
-  end
+  # how to define output << image ?
+  #def <<(output)
+  #  write(output)
+  #end
 
   private
   def validate_output(output)
@@ -306,24 +339,6 @@ class Rasem::SVGImage < Rasem::SVGTag
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
     HEADER
   end
-
-
-  # Return current deafult style
-  def default_style
-    @default_styles.last || {}
-  end
-
-  # Returns a new hash for styles after fixing names to match SVG standard
-  def fix_style(style)
-    new_style = {}
-    style.each_pair do |k, v|
-      new_k = k.to_s.gsub('_', '-')
-      new_style[new_k] = v
-    end
-    new_style
-  end
-
-
 
 end
 
