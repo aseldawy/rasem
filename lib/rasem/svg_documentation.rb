@@ -4574,7 +4574,14 @@ Rasem::SVG_STRUCTURE =
      :width,
      :height,
      :version,
-     :baseProfile]},
+     :baseProfile,
+     :xmlns,
+     :"xmlns:svg",
+     :"xmlns:cc",
+     :"xmlns:dc",
+     :"xmlns:rdf",
+     :"xmlns:inkscape",
+     :"xmlns:xlink"]},
  :switch=>
   {:elements=>
     [:switch,

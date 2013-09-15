@@ -43,6 +43,19 @@ page.css("li").each do
   p "..."
 end
 
+p "Adding xmlns attribute fammily to svg tag:"
+xmlns = [
+  nil,
+  "svg",
+  "cc",
+  "dc",
+  "rdf",
+  "inkscape",
+  "xlink",
+].map! { |e| ( if e then "xmlns:" + e else "xmlns" end).to_sym }
+p xmlns
+structure[:svg][:attributes].push(*xmlns) 
+
 p "Writing to file."
 
 #write header:

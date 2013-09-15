@@ -1,232 +1,258 @@
+Rasem::SVG_ALIAS = {
+  :group  => :g,
+  :rectangle => :rect,
+}
+
+Rasem::SVG_EXPANSION = {
+  :line   => [:x1,:y1,:x2,:y2],
+  :circle => [:cx,:cy,:r],
+  :image  => [:x,:y,:height,:width,:"xlink:href"],
+  :ellipse => [:cx,:cy,:rx,:ry],
+  :rect   => lambda do |args|
+    raise "Wrong unnamed argument count" unless args.size == 4 or args.size == 5 or args.size == 6
+    result = {
+      :x => args[0],
+      :y => args[1],
+      :width => args[2],
+      :height => args[3],
+    }
+    if (args.size > 4)
+      result[:rx] = args[4]
+      result[:ry] = (args[5] or args[4])
+    end
+    return result
+  end,
+  :polygon => lambda do |args|
+    args.flatten!
+    raise "Illegal number of coordinates (should be even)" if args.length.odd?
+    p args
+    return {
+      :points => args
+    }
+  end,
+  :polyline => lambda do |args|
+    args.flatten!
+    raise "Illegal number of coordinates (should be even)" if args.length.odd?
+    p args
+    return {
+      :points => args
+    }
+  end
+}
+
+Rasem::SVG_DEFAULTS = {
+  :text => {:fill=>"black"},
+  :line => {:stroke=>"black"},
+  :rect => {:stroke=>"black"},
+  :circle => {:stroke=>"black"},
+  :ellipse => {:stroke=>"black"},
+  :polygon => {:stroke=>"black"},
+  :polyline => {:stroke=>"black"},
+}
+
+#TODO: move to documentation?
+Rasem::SVG_TRANSFORM = [
+  :matrix,    # expects an array of 6 elements
+  :translate, #[tx, ty?]
+  :scale,     #[sx, sy?]
+  :rotate,    #[angle, (cx, cy)?]
+  :skewX,     # angle
+  :skewY,     # angle
+]
+
+Rasem::CSS_STYLE = [
+  :fill,
+  :stroke_width,
+  :stroke,
+  :fill_opacity,
+  :stroke_opacity,
+  :opacity,
+]
 
 class Rasem::SVGTag
-  attr_reader :tag, :parent, :child
+  attr_reader :tag, :attributes, :children
 
-  def initialize(tag, params={})
-    @output = bind_output(params.delete :output)
-    @parent = params.delete :parent
-    @tag = bind_tag(tag)
-    @params = bind_params(params)
-  end
-
-  def bind_output(output)
-    if output.nil?
-      ""
-    elsif output.respond_to?(:<<)
-      output
-    else
-      raise "Illegal output object: #{output.inspect}"
-    end
-  end
-
-  def bind_tag(tag)
-    raise "#{tag} is not a valid tag" unless Rasem::SVG_ELEMENTS.include?(tag.to_sym)
-    tag
-  end
-
-  def bind_params(params)
-    #TODO: make a list of valid parameters for all tags (see SVG docs)
-    params
-  end
-
-  def open(oneline = false)
-    raise "Should not open a tag repeatedly!" if @open
-    @parent.open_child(self) if @parent
-    @output << "<#{@tag} "
-    @params.each do |parameter, value|
-      @output << "#{parameter}=\"#{value}\" "
-    end
-    if oneline
-      @output << "/>"
-      @parent.close_child(self) if @parent
-    else
-      @output << ">"
-      @open = true
-    end
-  end
-
-  def opened?
-    @open
-  end
-
-  def open_close()
-    open(true)
-  end
-
-  def close()
-    raise "Should open a tag in order to close it!" unless @open
-    @output << "</#{@tag}>"
-    @open = false
-    @parent.close_child(self) if @parent
-  end
-
-  def closed?
-    not @open
-  end
-
-  def output()
-    @output.to_s
-  end
-end
-
-
-
-class Rasem::SVGContainer < Rasem::SVGTag
-  def initialize(tag, params={}, &block)
-    super(tag,params)
+  def initialize(tag, attributes={}, &block)
+    @tag = validate_tag(tag)
+    @attributes = validate_attributes(attributes)
     @children = []
-    @child = nil
     if block
-      self.open()
       instance_exec &block
-      self.close()
     end
   end
 
-  def spawn_child(tag, params={}, &block)
-    raise "Tag #{@tag} contains not closed child! May not add another in this scope." if @child
-    #Pass output and self down the hierarchy
-    params[:output] = @output
-    params[:parent] = self
-    @child = Rasem::SVGContainer.new(tag, params, &block)
+  def validate_tag(tag)
+    raise "#{tag} is not a valid tag" unless Rasem::SVG_ELEMENTS.include?(tag.to_sym)
+    tag.to_sym
   end
 
-  def method_missing(meth, *args, &block)
-    if @@valid_children[@tag.to_sym].include?(meth.to_s)
-      spawn_child(meth.to_s, *args, &block)
+  def validate_attributes(attributes)
+    clean_attributes = {}
+    transforms = {}
+    styles = {}
+    attributes.each do
+      |attribute, value|
+      if Rasem::SVG_TRANSFORM.include? attribute
+        transforms[attribute] = value
+      elsif Rasem::CSS_STYLE.include? attribute
+        styles[attribute] = value
+      else
+        clean_attributes[validate_attribute(attribute)] = value
+      end
+    end
+    #always prefer more verbose definition.
+    unless transforms.empty?
+      transforms.merge!(clean_attributes[:transform]) if clean_attributes[:transform]
+      clean_attributes[validate_attribute(:transform)] = transforms
+    end
+    unless styles.empty?
+      styles.merge!(clean_attributes[:style]) if clean_attributes[:style]
+      clean_attributes[validate_attribute(:style)] = styles
+    end
+    clean_attributes
+  end
+
+  def validate_attribute(attribute)
+    raise "#{@tag} does not support attribute #{attribute}" unless Rasem::SVG_STRUCTURE[@tag.to_sym][:attributes].include?(attribute.to_sym)
+    attribute.to_sym
+  end
+
+  def write_styles(styles, output)
+    styles.each do |attribute, value|
+      attribute = attribute.to_s
+      attribute.gsub!('_','-')
+      output << "#{attribute}:#{value};"
+    end
+  end
+
+  def write_transforms(transforms, output)
+    transforms.each do |attribute, value|
+      value = [value] unless value.is_a?(Array)
+      output << "#{attribute.to_s}(#{value.join(',')}) "
+    end
+  end
+
+  def write_points(points, output)
+    points.each_with_index do |value, index|
+      output << value.to_s
+      output << ',' if index.even?
+      output << ' ' if (index.odd? and (index != points.size-1))
+    end
+  end
+
+  def spawn_child(tag, *args, &block)
+    #expected args: nil, [hash], [...]
+    parameters = {} if args.size == 0
+    unless parameters #are empty
+      parameters = args[0] if args[0].is_a? Hash
+    end
+    unless parameters #are set
+      #try to find args expansion rule
+      expansion = Rasem::SVG_EXPANSION[tag.to_sym]
+      raise "Unnamed parameters for #{tag} are not allowed!" unless expansion
+      if expansion.is_a? Array
+        raise "Bad unnamed parameter count for #{tag}, expecting #{expansion.size} got #{if args.last.is_a? Hash then args.size-1 else args.size end}" unless (args.size == expansion.size and not args.last.is_a? Hash) or (args.size - 1 == expansion.size and args.last.is_a? Hash)
+        parameters = Hash[expansion.zip(args)]
+        if args.last.is_a? Hash
+          parameters.merge! args.last
+        end
+    elsif expansion.is_a? Proc
+      hash = args.pop if args.last.is_a? Hash
+      parameters = expansion.call(args)
+      parameters.merge! hash if hash
     else
-      super
+      raise "Unexpected expansion mechanism: #{expansion.class}"
     end
   end
+  # add default parameters if they are not overwritten
+  Rasem::SVG_DEFAULTS[tag.to_sym].each do |key, value|
+    parameters[key] = value unless parameters[key]
+  end if Rasem::SVG_DEFAULTS[tag.to_sym]
 
-  def open_child(child)
-    raise "Bad hierarchy" unless child.parent == self
-    @child = child
-  end
-  
-  def close_child(child)
-    raise "Bad hierarchy" unless @child == child
-    #Append closed child to children list.
-    @children.push(child)
-    @child = nil
-  end
-  
+  append_child(Rasem::SVGTag.new(tag, parameters, &block))
 end
 
+def append_child(child)
+  @children.push(child)
+  child
+end
 
-class Rasem::SVGImage
-  DefaultStyles = {
-    :text => {:fill=>"black"},
-    :line => {:stroke=>"black"},
-    :rect => {:stroke=>"black"},
-    :circle => {:stroke=>"black"},
-    :ellipse => {:stroke=>"black"},
-    :polygon => {:stroke=>"black"},
-    :polyline => {:stroke=>"black"}
-  }
+def validate_child_name(name)
+  #aliases the name (like, group instead of g)
+  name = Rasem::SVG_ALIAS[name.to_sym] if Rasem::SVG_ALIAS[name.to_sym]
+  #raises only if given name is an actual svg tag. In other case -- assumes user just mistyped.
+  if Rasem::SVG_STRUCTURE[@tag.to_sym][:elements].include?(name.to_sym)
+    name.to_sym
+  elsif Rasem::SVG_ELEMENTS.include?(name.to_sym)
+    raise "#{@tag} should not contain child #{name}" 
+  end
+end
+
+def method_missing(meth, *args, &block)
+  #if method is a setter or a getter, check valid attributes:
+  check = /^(?<name>.*)(?<op>=|\?)$/.match(meth)
+  if check
+    raise "Passing a code block to setter or getter is not permited!" if block
+    name = validate_attribute(check[:name].to_sym)
+    if check[:op] == '?'
+      @attributes[name]
+    elsif check[:op] == '='
+      raise "Setting an attribute with multiple values is not permited!" if args.size > 1
+      @attributes[name] = args[0]
+    end
+  elsif child = validate_child_name(meth)
+    spawn_child(child, *args, &block)
+  else
+    super
+  end
+end
+
+def write(output)
+  raise "Can not write to given output!" unless output.respond_to?(:<<)
+  output << "<#{@tag.to_s}"
+  @attributes.each do
+    |attribute, value|
+    output << " #{attribute.to_s}=\""
+    if attribute == :transform
+      write_transforms(value, output)
+    elsif attribute == :style
+      write_styles(value, output)
+    elsif attribute == :points
+      p "Writing points"
+      write_points(value, output)
+    else
+      output << "#{value.to_s}"
+    end
+    output << "\""
+  end
+  if @children.empty?
+    output << "/>"
+  else
+    output << ">"
+    @children.each { |c| c.write(output) }
+    output << "</#{@tag.to_s}>"
+  end
+end
+end
+
+class Rasem::SVGImage < Rasem::SVGTag
 
 
   def initialize(params = {}, output=nil, &block)
-    @output = create_output(output)
-
-    params["version"] = "1.1" unless params["version"]
-    params["xmlns"] = "http://www.w3.org/2000/svg" unless params["xmlns"]
-    params["xmlns:xlink"] = "http://www.w3.org/1999/xlink" unless params["xmlns:xlink"]
-    params[:output] = @output
-
-    write_header()
-
-    @svg = Rasem::SVGContainer.new("svg", params, &block)
-
-    #auto open file tag.
-    @svg.open() unless block
+    params[:"version"] = "1.1" unless params[:"version"]
+    params[:"xmlns"] = "http://www.w3.org/2000/svg" unless params[:"xmlns"]
+    params[:"xmlns:xlink"] = "http://www.w3.org/1999/xlink" unless params[:"xmlns:xlink"]
+    super("svg", params, &block)
 
     # Initialize a stack of default styles
     @default_styles = []
 
-  end
+    @output = (output or "")
+    validate_output(@output) if output
 
-  def set_width(new_width)
-    if @output.respond_to?(:sub!)
-      @output.sub!(/<svg width="[^"]+"/, %Q{<svg width="#{new_width}"})
-    else
-      raise "Cannot change width after initialization for this output"
+    if block
+      write(@output)
     end
-  end
-
-  def set_height(new_height)
-    if @output.respond_to?(:sub!)
-      @output.sub!(/<svg width="([^"]+)" height="[^"]+"/, %Q{<svg width="\\1" height="#{new_height}"})
-    else
-      raise "Cannot change width after initialization for this output"
-    end
-  end
-
-  # draw an image
-  def image(x, y, width, height, href)
-    @output << %Q{<image x="#{x}" y="#{y}" height="#{height}" width="#{width}" xlink:href="#{href}"}
-    @output << %Q{/>}
-  end
-
-  # Draw a straight line between the two end points
-  def line(x1, y1, x2, y2, style=DefaultStyles[:line])
-    @output << %Q{<line x1="#{x1}" y1="#{y1}" x2="#{x2}" y2="#{y2}"}
-    write_style(style)
-    @output << %Q{/>}
-  end
-
-  # Draw a circle given a center and a radius
-  def circle(cx, cy, r, style=DefaultStyles[:circle])
-    @output << %Q{<circle cx="#{cx}" cy="#{cy}" r="#{r}"}
-    write_style(style)
-    @output << %Q{/>}
-  end
-
-  # Draw a rectangle or rounded rectangle
-  def rectangle(x, y, width, height, *args)
-    style = (!args.empty? && args.last.is_a?(Hash)) ? args.pop : DefaultStyles[:rect]
-    if args.length == 0
-      rx = ry = 0
-    elsif args.length == 1
-      rx = ry = args.pop
-    elsif args.length == 2
-      rx, ry = args
-    else
-      raise "Illegal number of arguments to rectangle"
-    end
-
-    @output << %Q{<rect x="#{x}" y="#{y}" width="#{width}" height="#{height}"}
-    @output << %Q{ rx="#{rx}" ry="#{ry}"} if rx && ry
-    write_style(style)
-    @output << %Q{/>}
-  end
-
-  # Draw an circle given a center and two radii
-  def ellipse(cx, cy, rx, ry, style=DefaultStyles[:ellipse])
-    @output << %Q{<ellipse cx="#{cx}" cy="#{cy}" rx="#{rx}" ry="#{ry}"}
-    write_style(style)
-    @output << %Q{/>}
-  end
-
-  def polygon(*args)
-    polything("polygon", *args)
-  end
-
-  def polyline(*args)
-    polything("polyline", *args)
-  end
-
-  # Closes the file. No more drawing is possible after this
-  def close
-    write_close
-  end
-
-  def output
-    @output.to_s
-  end
-
-  def closed?
-    @svg.closed?
   end
 
   def with_style(style={}, &proc)
@@ -240,17 +266,6 @@ class Rasem::SVGImage
     @default_styles.pop
   end
 
-  def group(style={}, transforms={}, &proc)
-    # Open the group
-    @output << "<g"
-    write_style(style)
-    write_transforms(transforms)
-    @output << ">"
-    # Call the block
-    self.instance_exec(&proc)
-    # Close the group
-    @output << "</g>"
-  end
 
   def text(x, y, text, style=DefaultStyles[:text])
     @output << %Q{<text x="#{x}" y="#{y}"}
@@ -269,48 +284,29 @@ class Rasem::SVGImage
     @output << "</text>"
   end
 
-private
-  # Creates an object for ouput out of an argument
-  def create_output(arg)
-    if arg.nil?
-      ""
-    elsif arg.respond_to?(:<<)
-      arg
-    else
-      raise "Illegal output object: #{arg.inspect}"
-    end
+  def write(output)
+    validate_output(output)
+    write_header(output)
+    super(output)
+  end
+
+  def <<(output)
+    write(output)
+  end
+
+  private
+  def validate_output(output)
+    raise "Illegal output object: #{output.inspect}" unless output.respond_to?(:<<)
   end
 
   # Writes file header
-  def write_header()
-    @output << <<-HEADER
+  def write_header(output)
+    output << <<-HEADER
 <?xml version="1.0" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
     HEADER
   end
 
-  # Write the closing tag of the file
-  def write_close
-    @svg.close()
-  end
-
-  # Draws either a polygon or polyline according to the first parameter
-  def polything(name, *args)
-    return if args.empty?
-    style = (args.last.is_a?(Hash)) ? args.pop : DefaultStyles[name.to_sym]
-    coords = args.flatten
-    raise "Illegal number of coordinates (should be even)" if coords.length.odd?
-    @output << %Q{<#{name} points="}
-    until coords.empty? do
-      x = coords.shift
-      y = coords.shift
-      @output << "#{x},#{y}"
-      @output << " " unless coords.empty?
-    end
-    @output << '"'
-    write_style(style)
-    @output << '/>'
-  end
 
   # Return current deafult style
   def default_style
@@ -327,33 +323,6 @@ private
     new_style
   end
 
-  # Writes styles to current output
-  # Avaialable styles are:
-  # fill: Fill color
-  # stroke-width: stroke width
-  # stroke: stroke color
-  # fill-opacity: fill opacity. ranges from 0 to 1
-  # stroke-opacity: stroke opacity. ranges from 0 to 1
-  # opacity: Opacity for the whole element
-  def write_style(style)
-    style_ = fix_style(default_style.merge(style))
-    return if style_.empty?
-    @output << ' style="'
-    style_.each_pair do |attribute, value|
-      @output << "#{attribute}:#{value};"
-    end
-    @output << '"'
-  end
-
-  def write_transforms(transforms)
-    return if transforms.empty?
-    @output << ' transform="'
-    transforms.each_pair do |attribute, value|
-      value = [value] unless value.is_a?(Array)
-      @output << "#{attribute}(#{value.join(',')})"
-    end
-    @output << '"'
-  end
 
 
 end
