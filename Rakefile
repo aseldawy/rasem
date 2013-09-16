@@ -21,7 +21,7 @@ Jeweler::Tasks.new do |gem|
   You can use rasem to draw complex images using small portions of ruby code
   DESCRIPTION
   gem.email = "eldawy@cs.umn.edu"
-  gem.authors = ["Ahmed Eldawy"]
+  gem.authors = ["Ahmed Eldawy", "Vytis Valentinavičius"]
   # Include your dependencies below. Runtime dependencies are required when using your gem,
   # and development dependencies are only needed for development (ie running rake tasks, tests, etc)
   #  gem.add_runtime_dependency 'jabber4r', '> 0.1'
