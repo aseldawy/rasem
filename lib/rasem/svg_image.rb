@@ -93,6 +93,48 @@ class Rasem::SVGTag
     end
   end
 
+
+  ##
+  # Provide methods for SVG transformations
+  ##
+
+  def translate(tx, ty = 0)
+    add_transform("translate", "#{tx}, #{ty}")
+    self
+  end
+
+
+  def scale(sx, sy = 1)
+    add_transform("scale", "#{sx}, #{sy}")
+    self
+  end
+
+
+  def rotate(angle, cx = nil, cy = nil)
+    add_transform("rotate", "#{angle}#{cx.nil? or cy.nil? ? "" : ", #{cx}, #{cy}"}")
+    self
+  end
+
+
+  def skewX(angle)
+    add_transform("skewX", "#{angle}")
+    self
+  end
+
+
+  def skewY(angle)
+    add_transform("skewY", "#{angle}")
+    self
+  end
+
+
+  def matrix(a, b, c, d, e, f)
+    add_transform("matrix", "#{a}, #{b}, #{c}, #{d}, #{e}, #{f}")
+    self
+  end
+
+
+
   def validate_tag(tag)
     raise "#{tag} is not a valid tag" unless Rasem::SVG_ELEMENTS.include?(tag.to_sym)
     tag.to_sym
@@ -279,6 +321,15 @@ def write(output)
     output << "</#{@tag.to_s}>"
   end
 end
+
+private
+
+  def add_transform(type, params)
+    @attributes["transform"] = "" if @attributes["transform"].nil?
+    @attributes["transform"] = @attributes["transform"] + "#{type}(#{params})"    
+  end
+
+
 end
 
 class Rasem::SVGImage < Rasem::SVGTag
