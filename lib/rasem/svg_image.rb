@@ -111,7 +111,7 @@ class Rasem::SVGTag
 
 
   def rotate(angle, cx = nil, cy = nil)
-    add_transform("rotate", "#{angle}#{cx.nil? or cy.nil? ? "" : ", #{cx}, #{cy}"}")
+    add_transform("rotate", "#{angle}#{(cx.nil? or cy.nil?) ? "" : ", #{cx}, #{cy}"}")
     self
   end
 
@@ -334,8 +334,8 @@ end
 private
 
   def add_transform(type, params)
-    @attributes["transform"] = "" if @attributes["transform"].nil?
-    @attributes["transform"] = @attributes["transform"] + "#{type}(#{params})"    
+    @attributes[:transform] = "" if @attributes[:transform].nil?
+    @attributes[:transform] = @attributes[:transform] + "#{type}(#{params})"    
   end
 
 
