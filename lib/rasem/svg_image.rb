@@ -99,37 +99,37 @@ class Rasem::SVGTag
   ##
 
   def translate(tx, ty = 0)
-    add_transform("translate", "#{tx}, #{ty}")
+    add_transform(:translate, "#{tx}, #{ty}")
     self
   end
 
 
   def scale(sx, sy = 1)
-    add_transform("scale", "#{sx}, #{sy}")
+    add_transform(:scale, "#{sx}, #{sy}")
     self
   end
 
 
   def rotate(angle, cx = nil, cy = nil)
-    add_transform("rotate", "#{angle}#{(cx.nil? or cy.nil?) ? "" : ", #{cx}, #{cy}"}")
+    add_transform(:rotate, "#{angle}#{(cx.nil? or cy.nil?) ? "" : ", #{cx}, #{cy}"}")
     self
   end
 
 
   def skewX(angle)
-    add_transform("skewX", "#{angle}")
+    add_transform(:skewX, "#{angle}")
     self
   end
 
 
   def skewY(angle)
-    add_transform("skewY", "#{angle}")
+    add_transform(:skewY, "#{angle}")
     self
   end
 
 
   def matrix(a, b, c, d, e, f)
-    add_transform("matrix", "#{a}, #{b}, #{c}, #{d}, #{e}, #{f}")
+    add_transform(:matrix, "#{a}, #{b}, #{c}, #{d}, #{e}, #{f}")
     self
   end
 
@@ -157,7 +157,9 @@ class Rasem::SVGTag
     #always prefer more verbose definition.
     unless transforms.empty?
       transforms.merge!(clean_attributes[:transform]) if clean_attributes[:transform]
-      clean_attributes[validate_attribute(:transform)] = transforms
+      str = ""
+      write_transforms(transforms, str)
+      clean_attributes[validate_attribute(:transform)] = str
     end
     unless styles.empty?
       styles.merge!(clean_attributes[:style]) if clean_attributes[:style]
@@ -311,9 +313,7 @@ def write(output)
   @attributes.each do
     |attribute, value|
     output << " #{attribute.to_s}=\""
-    if attribute == :transform
-      write_transforms(value, output)
-    elsif attribute == :style
+    if attribute == :style
       write_styles(value, output)
     elsif attribute == :points
       write_points(value, output)
@@ -334,12 +334,13 @@ end
 private
 
   def add_transform(type, params)
-    @attributes[:transform] = "" if @attributes[:transform].nil?
-    @attributes[:transform] = @attributes[:transform] + "#{type}(#{params})"    
+    attr_name = validate_attribute(:transform)
+    @attributes[attr_name] = "" if @attributes[attr_name].nil?
+    @attributes[attr_name] = @attributes[attr_name] + "#{type}(#{params})"
   end
 
-
 end
+
 
 class Rasem::SVGImage < Rasem::SVGTag
 
