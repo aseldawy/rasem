@@ -94,6 +94,7 @@ class Rasem::SVGTag
   end
 
 
+
   ##
   # Provide methods for SVG transformations
   ##
@@ -329,7 +330,15 @@ def write(output)
     @children.each { |c| c.write(output) }
     output << "</#{@tag.to_s}>"
   end
+
 end
+
+  def to_s
+    str = ""
+    write(str)
+    return str
+  end
+
 
 private
 
@@ -504,12 +513,12 @@ class Rasem::SVGPath < Rasem::SVGTag
   #
   ##
   def scurveTo(dx, dy, x2, y2)
-    add_d("s#{x1},#{y1} #{x2},#{y2} #{dx},#{dy}")
+    add_d("s#{x2},#{y2} #{dx},#{dy}")
   end
 
 
   def scurveToA(dx, dy, x2, y2)
-    add_d("S#{x1},#{y1} #{x2},#{y2} #{dx},#{dy}")
+    add_d("S#{x2},#{y2} #{dx},#{dy}")
   end
 
 
@@ -520,12 +529,12 @@ class Rasem::SVGPath < Rasem::SVGTag
   # control point controlling how the curve bends.
   #
   ##
-  def qcurveToA(dx, dy, x1, y1)
-    add_d("Q#{x1},#{y1} #{dx},#{dy}")
+  def qcurveTo(dx, dy, x1, y1)
+    add_d("q#{x1},#{y1} #{dx},#{dy}")
   end
 
 
-  def qcurveTo(dx, dy, x1, y1)
+  def qcurveToA(dx, dy, x1, y1)
     add_d("Q#{x1},#{y1} #{dx},#{dy}")
   end
 
@@ -537,13 +546,13 @@ class Rasem::SVGPath < Rasem::SVGTag
   # point is assumed to be the same as the last control point used.
   #
   ##
-  def sqcurveToA(dx, dy)
-    add_d("T#{dx},#{dy}")
+  def sqcurveTo(dx, dy)
+    add_d("t#{dx},#{dy}")
   end
 
 
-  def sqcurveTo(dx, dy)
-    add_d("t#{dx},#{dy}")
+  def sqcurveToA(dx, dy)
+    add_d("T#{dx},#{dy}")
   end
 
 
@@ -559,13 +568,13 @@ class Rasem::SVGPath < Rasem::SVGTag
   # The sweep-flag determines the direction to draw the arc in.
   #
   ##
-  def arcToA(dx, dy, rx, ry, axis_rotation, large_arc_flag, sweep_flag)
-    add_d("A#{rx},#{ry} #{axis_rotation} #{large_arc_flag},#{sweep_flag} #{dx},#{dy}")
+  def arcTo(dx, dy, rx, ry, axis_rotation, large_arc_flag, sweep_flag)
+    add_d("a#{rx},#{ry} #{axis_rotation} #{large_arc_flag},#{sweep_flag} #{dx},#{dy}")
   end
 
 
-  def arcTo(dx, dy, x1, y1, x2, y2)
-    add_d("a#{rx},#{ry} #{axis_rotation} #{large_arc_flag},#{sweep_flag} #{dx},#{dy}")
+  def arcToA(dx, dy, rx, ry, axis_rotation, large_arc_flag, sweep_flag)
+    add_d("A#{rx},#{ry} #{axis_rotation} #{large_arc_flag},#{sweep_flag} #{dx},#{dy}")
   end
 
 
