@@ -4,7 +4,7 @@ describe Rasem::SVGPath do
 
   it "should be an instance of SVGTag" do
     tag = Rasem::SVGPath.new
-    (tag.class.superclass == Rasem::SVGTag).should == true
+    (class_hierarchy(tag).include? Rasem::SVGTag).should == true
   end
 
 
