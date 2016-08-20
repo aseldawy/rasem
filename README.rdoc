@@ -4,7 +4,7 @@ rasem is a pure ruby gem that allows you to describe your SVG images in ruby cod
 
 == Why Rasem
 
-* Have you ever wanted to visualize some data in a nice image?
+* Did you ever want to visualize some data in a nice image?
 * Do you want to draw a complex image that is easier to describe using a code?
 * Would you like to power your HTML 5 site with nicely drawn SVG images?
 * Do you need to generate nice images from your ruby code?
