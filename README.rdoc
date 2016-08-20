@@ -18,9 +18,13 @@ formats and embed in an HTML 5 page.
 
 * Draw basic elements: line, rectangle, rouned rectangle, circle, ellipse, polygon and polyline.
 * Use SVG styles such as stroke-width, opacity and fill.
+* Use SVG transformations such as translate, scale, rotate, skewX/Y and matrix
 * Create SVG groups for better editing in SVG editors.
+* Create SVG paths using ruby blocks
+* Use definitions to create shapes and reuse them in your image
+* Create SVG gradients
 Coming features:
-* Include all SVG standard elements such as gradients, filters and paths
+* Include all SVG standard elements such as filters
 * Create default rake and thor tasks to convert your .rasem files to .svg.
 * Embed other images in your SVG image
 * Output to more formats such as PNG.
@@ -37,8 +41,8 @@ There are two main methods to generate images with Rasem.
 
 === Command line
 Create a file with extension .rasem. Here is a sample file test.rasem
-  set_width 100
-  set_height 100
+  self.width = 100
+  self.height = 100
   circle 20, 20, 5
   circle 50, 50, 5
   line 20, 20, 50, 50
@@ -54,7 +58,7 @@ sending the image on the fly from a Rails application.
 
 Here is a simple example
   require 'rasem'
-  img = Rasem::SVGImage.new(100,100) do
+  img = Rasem::SVGImage.new(:width=>100, :height=>100) do
     circle 20, 20, 5
     circle 50, 50, 5
     line 20, 20, 50, 50
@@ -84,8 +88,8 @@ simple_graph.rasem
 Here is a more sophisticated example.
 
 tictactoe.rasem
-  set_width 150
-  set_height 150
+  self.width = 150
+  self.height = 150
   board = [['x', 'o', 'x'],
            ['o', '-', 'o'],
            ['x', 'o', 'x']]
@@ -118,15 +122,17 @@ tictactoe.rasem
     end
   end
 
+
+
 Here are some examples that show how you can generate images from your ruby code.
 
 You can generate SVG and store it to file
-  img = Rasem::SVGImage.new(100, 100)
+  img = Rasem::SVGImage.new(:width => 100, :height => 100)
   img.line(0, 0, 100, 100)
-  img.close
+  
 
   File.open("test.svg", w") do |f|
-    f << img.output
+    img.write(f)
   end
 
 You can use pass a block to SVGImage.new to make things more compact
@@ -139,15 +145,101 @@ You can use pass a block to SVGImage.new to make things more compact
 You can make your code even more compact by passing the file as a last argument
 to SVGImage.new
   File.open("test.svg", "w") do |f|
-    Rasem::SVGImage.new(100, 100, f) do |f|
+    Rasem::SVGImage.new({:width => 100, :height => 100}, f) do
       line(0, 0, 100, 100)
     end
   end
 
-The previous example has another advantage.
-It does not need to buffer the whole image to memory before writing to file.
-Rasem is smart enough to detect that the output can be passed directly to the
-file, hence, saving unnecessary memory buffers.
+
+You can use transformations on created objects (translate, scale, rotate, skew, matrix)
+
+  img = Rasem::SVGImage.new(:width => 100, :height => 100) do
+    circle(0, 0, 10).translate(50, 50).scale(2, 1.5)
+  end
+
+
+Here is an example showing how to generate a path using ruby code.
+
+  require 'rasem'
+  
+  width = 100
+  height = 200
+  
+  img = Rasem::SVGImage.new(:width => width, :height => height) do
+    path("stroke" => "black") do
+      moveToA(0, height / 2.0)
+      vlineTo(height / 2.0 - 50)
+      curveTo(50, 40, 0, 0, 50, 0)
+      curveTo(-30, -50, 0, 0, 10, -30)
+      vlineTo(-(height / 2.0 - 60))
+    end
+  end
+  
+  File.open("path.svg", "w") do |f|
+    img.write(f)
+  end
+
+
+Using definitions and reuse them later
+
+  img = Rasem::SVGImage.new(:width => 100, :height => 100) do
+    defs do
+      group(:id => "group1") do
+        circle(0, 0, 20)
+        text(0, 5, :fill => "red") { raw "hi!" }
+      end
+    end
+  
+    use("group1", :x => 50, :y => 25)
+    use("group1", :x => 50, :y => 75, :fill => "blue")
+  end
+
+
+Ruby method def_group to use definitions. It create a group inside 'defs' with the given id and populate it using the block. The second optional argument controls the behaviour if the id is already in use, you can :fail, :update the existing element (and return the new one), or :skip the new one (effectively skipping the block, and returning the existing element).
+
+  img = Rasem::SVGImage.new(:width => 100, :height => 100) do
+  
+    g = def_group("group1") do
+      circle(0, 0, 20)
+    end
+  
+  
+    g = def_group("group1", :update) do
+      circle(0, 0, 20)
+      text(0, 5, :fill => "red") { raw "hi!" }
+    end
+      
+    
+    use(g, :x => 50, :y => 25)
+    use(g, :x => 50, :y => 75, :fill => "blue")
+  end 
+
+
+An example of gradients usage
+
+  img = Rasem::SVGImage.new(:width => 100, :height => 100) do
+  
+    r1 = radialGradient("rgrad1") do
+      stop("0%", "green", 1)
+      stop("100%", "blue", 1)
+    end
+  
+    r2 = radialGradient("rgrad2") do
+      stop("0%", "yellow", 1)
+      stop("100%", "red", 1)
+    end
+  
+    r2 = radialGradient("rgrad2", {}, :skip) do
+      stop("0%", "blue", 1)
+      stop("100%", "red", 1)
+    end
+  
+  
+    circle(50, 25, 20, :fill => r1.fill)
+    circle(50, 75, 20, :fill => r2.fill)
+  end
+
+
 
 == Contributing to rasem
 * Check out the latest master to make sure the feature hasn't been implemented or the bug hasn't been fixed yet

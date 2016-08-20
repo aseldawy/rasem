@@ -17,20 +17,19 @@ class Rasem::Application
       else
         svg_file = source_file + ".svg"
       end
-      img = Rasem::SVGImage.new("100%", "100%") do
-        begin
-          load File.expand_path(source_file)
-        rescue Exception => e
-          # Keep the portion of stack trace that belongs to the .rasem file
-          backtrace = e.backtrace.grep(Regexp.new(File.expand_path(source_file)))
-          raise e.class, e.message, backtrace
+      File.open(svg_file, "w") do |fout|
+        Rasem::SVGImage.new({:width=>"100%", :height=>"100%"}, fout) do
+          begin
+            instance_eval File.read(source_file), source_file
+          rescue Exception => e
+            # Keep the portion of stack trace that belongs to the .rasem file
+            backtrace = e.backtrace.grep(Regexp.new(File.expand_path(source_file)))
+            raise e.class, e.message, backtrace
+          end
         end
       end
-      File.open(svg_file, "w") do |f|
-        f << img.output
-      end
     end
-    
+
     return 0
   end
 end
