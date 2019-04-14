@@ -1,14 +1,14 @@
 = Rasem
 
-rasem is a pure ruby gem that allows you to describe your SVG images in ruby code.
+rasem is a pure-Ruby gem that allows you to describe your SVG images in Ruby code.
 
 == Why Rasem
 
 * Did you ever want to visualize some data in a nice image?
 * Do you want to draw a complex image that is easier to describe using a code?
 * Would you like to power your HTML 5 site with nicely drawn SVG images?
-* Do you need to generate nice images from your ruby code?
-* Are you fed up with using DIVs and Javascript to draw simple graphs?
+* Do you need to generate nice images from your Ruby code?
+* Are you fed up with using DIVs and JavaScript to draw simple graphs?
 * Is your server overwhelmed with sending PNG images that can be described in a few bytes using SVG?
 
 Rasem allows you to generate SVG images that can be easily exported to other
@@ -16,16 +16,16 @@ formats and embed in an HTML 5 page.
 
 == Features
 
-* Draw basic elements: line, rectangle, rouned rectangle, circle, ellipse, polygon and polyline.
+* Draw basic elements: line, rectangle, rounded rectangle, circle, ellipse, polygon and polyline.
 * Use SVG styles such as stroke-width, opacity and fill.
 * Use SVG transformations such as translate, scale, rotate, skewX/Y and matrix
 * Create SVG groups for better editing in SVG editors.
-* Create SVG paths using ruby blocks
+* Create SVG paths using Ruby blocks
 * Use definitions to create shapes and reuse them in your image
 * Create SVG gradients
 Coming features:
 * Include all SVG standard elements such as filters
-* Create default rake and thor tasks to convert your .rasem files to .svg.
+* Create default Rake and Thor tasks to convert your .rasem files to .svg.
 * Embed other images in your SVG image
 * Output to more formats such as PNG.
 
@@ -124,7 +124,7 @@ tictactoe.rasem
 
 
 
-Here are some examples that show how you can generate images from your ruby code.
+Here are some examples that show how you can generate images from your Ruby code.
 
 You can generate SVG and store it to file
   img = Rasem::SVGImage.new(:width => 100, :height => 100)
@@ -195,7 +195,7 @@ Using definitions and reuse them later
   end
 
 
-Ruby method def_group to use definitions. It create a group inside 'defs' with the given id and populate it using the block. The second optional argument controls the behaviour if the id is already in use, you can :fail, :update the existing element (and return the new one), or :skip the new one (effectively skipping the block, and returning the existing element).
+Ruby method def_group to use definitions. It creates a group inside 'defs' with the given id and populates it using the block. The second optional argument controls the behaviour: if the id is already in use, you can :fail, :update the existing element (and return the new one), or :skip the new one (effectively skipping the block, and returning the existing element).
 
   img = Rasem::SVGImage.new(:width => 100, :height => 100) do
   
